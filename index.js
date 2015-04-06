@@ -12,36 +12,32 @@ chalk.enabled = true;
 function EstrnBrowserify(options) {
   this.files = [];
 
-  this.app = options.src;
+  this.cwd = options.cwd;
+  this.app = options.app;
   this.vendor = options.vendor;
   this.dest = options.output;
   this.watch = options.watch || false;
 
-  console.log(options);
-
-  // Pull out imports from main scss files on load
-  this.cwd = options.cwd;
-  this.ext = path.extname(this.src);
-
   var self = this;
 
+  this.getVendorFiles(this.vendor);
+  console.log(vendorRequires);
   if (this.watch) {
-    if (typeof this.src == 'object') {
-      this.src = this.src[0];
-    }
-
-    glob(this.src, { cwd: this.cwd }, function(err, filesArr) {
-
-      self.buildImportMap(filesArr);
-
-      async.each(Object.keys(self.main_files), function(src) {
-        if (self.main_files.hasOwnProperty(src)) {
-          self.compileSass(src);
-        }
-      });
-
-    });
   }
+}
+
+EstrnBrowserify.prototype.constructor = EstrnBrowserify;
+
+EstrnBrowserify.prototype.getVendorFiles = function(dir) {
+  var vendorRequires = [];
+  var self = this;
+  dir = dir + '/*.js';
+
+  glob(dir, {}, function(err, filesArr) {
+    var module = path.basename(filesArr[0], '.js');
+    console.log(module);
+    self.vendorRequires.push('./'+filesArr[0]+':'+module);
+  });
 }
 
 module.exports = EstrnBrowserify;
