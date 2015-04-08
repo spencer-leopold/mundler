@@ -11,7 +11,7 @@ chalk.enabled = true;
 
 function EstrnBrowserify(options) {
   this.files = [];
-  this.externalFiles = [];
+  this.externalModules = [];
   this.vendorRequires = [];
 
   this.cwd = options.cwd;
@@ -52,7 +52,7 @@ EstrnBrowserify.prototype.getVendorFiles = function() {
     async.each(filesArr, function(file, next) {
       var module = path.basename(file, '.js');
       self.vendorRequires.push({ file: './'+file, expose: module});
-      self.externalFiles.push('./'+file);
+      self.externalModules.push(module);
       next();
     });
   });
@@ -85,7 +85,7 @@ EstrnBrowserify.prototype.buildMainBundles = function(watch) {
 
   setTimeout(function() {
     async.each(self.files, function(fileObj, next) {
-      new EstrnBundler(fileObj, false, self.externalFiles, self.watch);
+      new EstrnBundler(fileObj, false, self.externalModules, self.watch);
     });
   }, 1000);
 }
@@ -129,11 +129,10 @@ function EstrnBundler(options, requires, external, watch) {
 
     b.on('update', function (ids) {
       console.log(ids);
-      b.bundle();
-      // b.bundle(function(err, buf) {
-      //   fs.writeFile('./bundle-'+options.name+'.js', buf);
-      //   console.log('wrote %s bundle', options.name);
-      // });
+      b.bundle(function(err, buf) {
+        fs.writeFile('./bundle-'+options.name+'.js', buf);
+        console.log('wrote %s bundle', options.name);
+      });
     });
   }
 
