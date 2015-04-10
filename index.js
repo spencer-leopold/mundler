@@ -74,13 +74,14 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
 }
 
 EstrnBrowserify.prototype.buildVendorBundle = function(watch) {
-  bundle({ name: 'vendor', concat: this.concat }, this.vendorRequires, false, this.watch);
+  bundle({ name: 'vendor', concat: this.concat, dest: this.dest }, this.vendorRequires, false, this.watch);
 }
 
 
 EstrnBrowserify.prototype.buildMainBundles = function(watch) {
   async.each(this.files, function(fileObj, next) {
     fileObj.concat = this.concat;
+    fileObj.dest = this.dest;
     bundle(fileObj, false, this.externalModules, this.watch);
   }.bind(this));
 }
@@ -105,7 +106,7 @@ function bundle(options, requires, external, watch) {
       },
       function(callback) {
         b.bundle(function(err, buf) {
-          fs.writeFile('./bundle-'+options.name+'.js', buf);
+          fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
           cache.vendorBundle = buf;
         });
         callback();
@@ -118,7 +119,7 @@ function bundle(options, requires, external, watch) {
     b.add(options.file);
 
     b.bundle(function(err, buf) {
-      fs.writeFile('./bundle-'+options.name+'.js', buf);
+      fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
     });
 
     b.on('update', function (ids) {
@@ -126,7 +127,7 @@ function bundle(options, requires, external, watch) {
         if (options.concat) {
           buf = cache.vendorBuffer + buf;
         }
-        fs.writeFile('./bundle-'+options.name+'.js', buf);
+        fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
       });
     });
   }
