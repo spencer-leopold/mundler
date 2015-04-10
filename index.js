@@ -7,7 +7,7 @@ var gaze = require('gaze');
 var glob = require('glob')
 var assign = require('object-assign');
 var chalk = require('chalk');
-var vendorBuffer;
+var cache = {};
 chalk.enabled = true;
 
 function EstrnBrowserify(options) {
@@ -19,6 +19,7 @@ function EstrnBrowserify(options) {
   this.app = options.app;
   this.vendor = options.vendor;
   this.dest = options.output;
+  this.concat = options.concat || false;
   this.watch = options.watch || false;
 
   var self = this;
@@ -73,12 +74,13 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
 }
 
 EstrnBrowserify.prototype.buildVendorBundle = function(watch) {
-  bundle({ name: 'vendor' }, this.vendorRequires, false, this.watch);
+  bundle({ name: 'vendor', concat: this.concat }, this.vendorRequires, false, this.watch);
 }
 
 
 EstrnBrowserify.prototype.buildMainBundles = function(watch) {
   async.each(this.files, function(fileObj, next) {
+    fileObj.concat = this.concat;
     bundle(fileObj, false, this.externalModules, this.watch);
   }.bind(this));
 }
@@ -104,7 +106,7 @@ function bundle(options, requires, external, watch) {
       function(callback) {
         b.bundle(function(err, buf) {
           fs.writeFile('./bundle-'+options.name+'.js', buf);
-          vendorBuffer = buf;
+          cache.vendorBundle = buf;
         });
         callback();
       }
@@ -120,9 +122,11 @@ function bundle(options, requires, external, watch) {
     });
 
     b.on('update', function (ids) {
-      // console.log(ids);
       b.bundle(function(err, buf) {
-        fs.writeFile('./bundle-'+options.name+'.js', vendorBuffer + buf);
+        if (options.concat) {
+          buf = cache.vendorBuffer + buf;
+        }
+        fs.writeFile('./bundle-'+options.name+'.js', buf);
       });
     });
   }
