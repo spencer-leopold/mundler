@@ -7,6 +7,7 @@ var gaze = require('gaze');
 var glob = require('glob')
 var assign = require('object-assign');
 var chalk = require('chalk');
+var vendorBuffer;
 chalk.enabled = true;
 
 function EstrnBrowserify(options) {
@@ -24,12 +25,10 @@ function EstrnBrowserify(options) {
 
   async.series([
     function(callback) {
-      self.getVendorFiles();
-      callback();
+      self.getVendorFiles(callback);
     },
     function(callback) {
-      self.getMainFiles();
-      callback();
+      self.getMainFiles(callback);
     },
     function(callback) {
       self.buildVendorBundle(self.watch);
@@ -44,7 +43,7 @@ function EstrnBrowserify(options) {
 
 EstrnBrowserify.prototype.constructor = EstrnBrowserify;
 
-EstrnBrowserify.prototype.getVendorFiles = function() {
+EstrnBrowserify.prototype.getVendorFiles = function(callback) {
   var self = this;
   var dir = this.vendor + '/*.js';
 
@@ -55,10 +54,12 @@ EstrnBrowserify.prototype.getVendorFiles = function() {
       self.externalModules.push(module);
       next();
     });
+
+    callback();
   });
 }
 
-EstrnBrowserify.prototype.getMainFiles = function() {
+EstrnBrowserify.prototype.getMainFiles = function(callback) {
   var self = this;
   var dir = this.app + '/*.js';
 
@@ -68,26 +69,20 @@ EstrnBrowserify.prototype.getMainFiles = function() {
       self.files.push({ file: './'+file, name: name });
       next();
     });
+
+    callback();
   });
 }
 
 EstrnBrowserify.prototype.buildVendorBundle = function(watch) {
-  var self = this;
-
-  setTimeout(function() {
-    new EstrnBundler(false, self.vendorRequires, false, self.watch);
-  }, 1000);
+  EstrnBundler({ name: 'vendor' }, this.vendorRequires, false, this.watch);
 }
 
 
 EstrnBrowserify.prototype.buildMainBundles = function(watch) {
-  var self = this;
-
-  setTimeout(function() {
-    async.each(self.files, function(fileObj, next) {
-      new EstrnBundler(fileObj, false, self.externalModules, self.watch);
-    });
-  }, 1000);
+  async.each(this.files, function(fileObj, next) {
+    EstrnBundler(fileObj, false, this.externalModules, this.watch);
+  }.bind(this));
 }
 
 function EstrnBundler(options, requires, external, watch) {
@@ -110,8 +105,8 @@ function EstrnBundler(options, requires, external, watch) {
       },
       function(callback) {
         b.bundle(function(err, buf) {
-          fs.writeFile('./test.js', buf);
-          console.log('wrote vendor bundle');
+          fs.writeFile('./bundle-'+options.name+'.js', buf);
+          vendorBuffer = buf;
         });
         callback();
       }
@@ -123,15 +118,13 @@ function EstrnBundler(options, requires, external, watch) {
     b.add(options.file);
 
     b.bundle(function(err, buf) {
-      fs.writeFile(process.cwd() + '/bundle-'+options.name+'.js', buf);
-      console.log('wrote %s bundle', options.name);
+      fs.writeFile('./bundle-'+options.name+'.js', buf);
     });
 
     b.on('update', function (ids) {
-      console.log(ids);
+      // console.log(ids);
       b.bundle(function(err, buf) {
-        fs.writeFile('./bundle-'+options.name+'.js', buf);
-        console.log('wrote %s bundle', options.name);
+        fs.writeFile('./bundle-'+options.name+'.js', vendorBuffer + buf);
       });
     });
   }
@@ -140,8 +133,8 @@ function EstrnBundler(options, requires, external, watch) {
     console.log(err);
   });
 
-  b.on('time', function (time) {
-    console.log(time);
+  b.on('log', function (msg) {
+    console.log(chalk.yellow('Bundle ' + options.name) + ': ' + msg);
   });
 }
 
