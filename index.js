@@ -41,8 +41,6 @@ function EstrnBrowserify(options) {
   ]);
 }
 
-EstrnBrowserify.prototype.constructor = EstrnBrowserify;
-
 EstrnBrowserify.prototype.getVendorFiles = function(callback) {
   var self = this;
   var dir = this.vendor + '/*.js';
@@ -75,17 +73,17 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
 }
 
 EstrnBrowserify.prototype.buildVendorBundle = function(watch) {
-  EstrnBundler({ name: 'vendor' }, this.vendorRequires, false, this.watch);
+  bundle({ name: 'vendor' }, this.vendorRequires, false, this.watch);
 }
 
 
 EstrnBrowserify.prototype.buildMainBundles = function(watch) {
   async.each(this.files, function(fileObj, next) {
-    EstrnBundler(fileObj, false, this.externalModules, this.watch);
+    bundle(fileObj, false, this.externalModules, this.watch);
   }.bind(this));
 }
 
-function EstrnBundler(options, requires, external, watch) {
+function bundle(options, requires, external, watch) {
   if (!watch) {
     var b = browserify();
   }
