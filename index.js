@@ -11,6 +11,7 @@ var cache = {};
 chalk.enabled = true;
 
 function EstrnBrowserify(options) {
+  this.dependencies = this.getDeps();
   this.files = [];
   this.externalModules = [];
   this.vendorRequires = [];
@@ -40,6 +41,16 @@ function EstrnBrowserify(options) {
       callback();
     }
   ]);
+}
+
+EstrnBrowserify.prototype.getDeps = function() {
+  var deps = require(process.cwd() + '/package.json').dependencies;
+  if (deps) {
+    return Object.keys(deps);
+  }
+  else {
+    return [];
+  }
 }
 
 EstrnBrowserify.prototype.getVendorFiles = function(callback) {
@@ -74,7 +85,7 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
 }
 
 EstrnBrowserify.prototype.buildVendorBundle = function(watch) {
-  bundle({ name: 'vendor', concat: this.concat, dest: this.dest }, this.vendorRequires, false, this.watch);
+  bundle({ name: 'vendor', concat: this.concat, dest: this.dest, deps: this.dependencies }, this.vendorRequires, false, this.watch);
 }
 
 
@@ -82,6 +93,7 @@ EstrnBrowserify.prototype.buildMainBundles = function(watch) {
   async.each(this.files, function(fileObj, next) {
     fileObj.concat = this.concat;
     fileObj.dest = this.dest;
+    fileObj.deps = this.dependencies;
     bundle(fileObj, false, this.externalModules, this.watch);
   }.bind(this));
 }
@@ -96,22 +108,12 @@ function bundle(options, requires, external, watch) {
   }
 
   if (requires.length) {
-    async.series([
-      function(callback) {
-        async.each(requires, function(required, next) {
-          b.require(required.file, { expose: required.expose });
-          next();
-        })
-        callback();
-      },
-      function(callback) {
-        b.bundle(function(err, buf) {
-          fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
-          cache.vendorBundle = buf;
-        });
-        callback();
-      }
-    ]);
+    b.require(requires);
+
+    b.bundle(function(err, buf) {
+      fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
+      cache.vendorBundle = buf;
+    });
   }
 
   if (external.length) {
