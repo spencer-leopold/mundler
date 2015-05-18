@@ -32,14 +32,14 @@ function EstrnBrowserify(options) {
     function(callback) {
       self.getMainFiles(callback);
     },
-    function(callback) {
-      self.buildVendorBundle(self.watch);
-      callback();
-    },
-    function(callback) {
-      self.buildMainBundles(self.watch);
-      callback();
-    }
+    // function(callback) {
+    //   self.buildVendorBundle(self.watch);
+    //   callback();
+    // }
+    // function(callback) {
+    //   self.buildMainBundles(self.watch);
+    //   callback();
+    // }
   ]);
 }
 
@@ -55,11 +55,11 @@ EstrnBrowserify.prototype.getDeps = function() {
 
 EstrnBrowserify.prototype.getVendorFiles = function(callback) {
   var self = this;
-  var dir = this.vendor + '/*.js';
+  var dir = this.vendor + '/*.jsx';
 
   glob(dir, {}, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
-      var module = path.basename(file, '.js');
+      var module = path.basename(file, '.jsx');
       self.vendorRequires.push({ file: './'+file, expose: module});
       self.externalModules.push(module);
       next();
@@ -71,16 +71,57 @@ EstrnBrowserify.prototype.getVendorFiles = function(callback) {
 
 EstrnBrowserify.prototype.getMainFiles = function(callback) {
   var self = this;
-  var dir = this.app + '/*.js';
+  var dir = this.app + '/**/*.jsx';
+
+  if (!this.watch) {
+    var b = browserify();
+  }
+  else {
+    var b = browserify({ cache: {}, packageCache: {} });
+    b = watchify(b);
+  }
 
   glob(dir, {}, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
-      var name = path.basename(file, '.js');
-      self.files.push({ file: './'+file, name: name });
+      var name = path.basename(file, '.jsx');
+      var appName = 'app/dashboard/app/';
+      var replaceWith = 'app/';
+      var expose = file.replace(appName, replaceWith).replace('.jsx', '').replace('.js', '');
+      var fileObj = { file: './'+file, expose: expose };
+
+      self.files.push(fileObj);
+      b.require('./'+file, { expose: expose });
+
       next();
     });
 
+    b.require('reaction/shared/router');
+    self.buildNewBundle(b);
     callback();
+  });
+}
+
+EstrnBrowserify.prototype.buildNewBundle = function(b) {
+  b.bundle(function(err, buf) {
+    fs.writeFile('./dist/js/scripts.js', buf);
+  });
+
+  b.on('update', function (ids) {
+    b.bundle(function(err, buf) {
+      fs.writeFile('./dist/js/scripts.js', buf);
+    });
+  });
+
+  // b.on('file', function (file, id, parent) {
+  //   console.log("file: %s", file);
+  // });
+
+  b.on('error', function (err) {
+    console.log(err);
+  });
+
+  b.on('log', function (msg) {
+    console.log(chalk.yellow('Bundle dist') + ': ' + msg);
   });
 }
 
@@ -116,7 +157,7 @@ function bundle(options, requires, external, watch) {
     });
   }
 
-  if (external.length) {
+  if (!external.length && options.file) {
     b.external(external);
     b.add(options.file);
 
