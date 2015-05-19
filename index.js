@@ -88,7 +88,8 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
       // var fileObj = { file: './'+file, expose: expose };
       //
       // self.files.push(fileObj);
-      b.add(file);
+      var expose = file.replace(dir, '.');
+      b.add(file, { expose: expose });
 
       next();
     });
