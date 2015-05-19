@@ -11,7 +11,6 @@ var cache = {};
 chalk.enabled = true;
 
 function EstrnBrowserify(options) {
-  this.dependencies = this.getDeps();
   this.files = [];
   this.externalModules = [];
   this.vendorRequires = [];
@@ -31,90 +30,157 @@ function EstrnBrowserify(options) {
     },
     function(callback) {
       self.getMainFiles(callback);
-    },
-    // function(callback) {
-    //   self.buildVendorBundle(self.watch);
-    //   callback();
-    // }
-    // function(callback) {
-    //   self.buildMainBundles(self.watch);
-    //   callback();
-    // }
+    }
   ]);
 }
 
 EstrnBrowserify.prototype.getDeps = function() {
   var deps = require(process.cwd() + '/package.json').dependencies;
+
   if (deps) {
     return Object.keys(deps);
   }
-  else {
-    return [];
-  }
+
+  return [];
 }
 
-EstrnBrowserify.prototype.getVendorFiles = function(callback) {
-  var self = this;
-  var dir = this.vendor + '/*.jsx';
+EstrnBrowserify.prototype.getBrowserNames = function() {
+  var browserNames = require(process.cwd() + '/package.json').browser;
 
-  glob(dir, {}, function(err, filesArr) {
-    async.each(filesArr, function(file, next) {
-      var module = path.basename(file, '.jsx');
-      self.vendorRequires.push({ file: './'+file, expose: module});
-      self.externalModules.push(module);
-      next();
-    });
+  if (browserNames) {
+    var obj = {};
 
-    callback();
-  });
+    for (var prop in browserNames) {
+      if (browserNames.hasOwnProperty(prop)) {
+        obj[browserNames[prop]] = prop;
+      }
+    }
+
+    return obj;
+  }
+
+  return false;
 }
 
 EstrnBrowserify.prototype.getMainFiles = function(callback) {
   var self = this;
-  var dir = this.app + '/**/*.jsx';
+  var dir = this.app;
+  var b;
 
   if (!this.watch) {
-    var b = browserify();
+    b = browserify();
   }
   else {
-    var b = browserify({ cache: {}, packageCache: {} });
+    b = browserify({ cache: {}, packageCache: {} });
     b = watchify(b);
   }
 
-  glob(dir, {}, function(err, filesArr) {
-    async.each(filesArr, function(file, next) {
-      var name = path.basename(file, '.jsx');
-      var appName = 'app/dashboard/app/';
-      var replaceWith = 'app/';
-      var expose = file.replace(appName, replaceWith).replace('.jsx', '').replace('.js', '');
-      var fileObj = { file: './'+file, expose: expose };
+  if (this.externalModules) {
+    b.external(this.externalModules);
+  }
 
-      self.files.push(fileObj);
-      b.require('./'+file, { expose: expose });
+  glob(dir+'/**/*.js', {}, function(err, filesArr) {
+    async.each(filesArr, function(file, next) {
+      // var name = path.basename(file, '.jsx');
+      // var appName = 'app/dashboard/app/';
+      // var replaceWith = 'app/';
+      // var expose = file.replace(appName, replaceWith).replace('.jsx', '').replace('.js', '');
+      // var fileObj = { file: './'+file, expose: expose };
+      //
+      // self.files.push(fileObj);
+      b.add(file);
 
       next();
     });
 
-    b.require('reaction/shared/router');
-    self.buildNewBundle(b);
+    self.buildNewBundle(b, 'bundle-main');
     callback();
   });
 }
 
-EstrnBrowserify.prototype.buildNewBundle = function(b) {
+
+EstrnBrowserify.prototype.getVendorFiles = function(callback) {
+  if (!this.vendor) {
+    return callback();
+  }
+
+  var self = this;
+  var dir = this.vendor;
+  var b;
+
+  if (!this.watch) {
+    b = browserify();
+  }
+  else {
+    b = browserify({ cache: {}, packageCache: {} });
+    b = watchify(b);
+  }
+
+  // Check for custom browser expose names in package.json
+  var browserFiles = false;
+  var browserNames = this.getBrowserNames();
+
+  if (browserNames) {
+    browserFiles = Object.keys(browserNames);
+  }
+
+  // Check for any dependencies installed through node
+  var deps = this.getDeps();
+  depsTotal = deps.length;
+
+  // If we have some node deps, require them into the 
+  // vendor bundle and add it as and external dependency
+  // for out main bundles. Common use case is for LoDash
+  // and other front end packages availabe in npm
+  for (var i = 0; i < depsTotal; i++) {
+    var dep = deps[i];
+
+    b.require(dep);
+    this.externalModules.push(dep);
+  }
+
+  glob(dir+'/**/*.js', {}, function(err, filesArr) {
+    async.each(filesArr, function(file, next) {
+      var name = path.basename(file, '.js');
+
+      // If a custom expose name is defined in package.json
+      // use that instead of filename sans extension
+      if (browserFiles) {
+        var idx = browserFiles.indexOf(file);
+        if (idx !== -1) {
+          name = browserNames[browserFiles[idx]];
+        }
+      }
+
+      self.externalModules.push(name);
+      b.require(file, { expose: name });
+
+      next();
+    });
+
+    self.buildNewBundle(b, 'bundle-vendor');
+    callback();
+  });
+}
+
+EstrnBrowserify.prototype.buildNewBundle = function(b, name) {
+
+  console.time('Browserify '+name+' written in');
   b.bundle(function(err, buf) {
-    fs.writeFile('./dist/js/scripts.js', buf);
+    fs.writeFile('./dist/js/'+name+'.js', buf, function(err) {
+      if (err) {
+        return console.log("write error: %s", err);
+      }
+
+      console.timeEnd('Browserify '+name+' written in');
+    });
   });
 
   b.on('update', function (ids) {
     b.bundle(function(err, buf) {
-      fs.writeFile('./dist/js/scripts.js', buf);
+      fs.writeFile('./dist/js/'+name+'.js', buf);
     });
   });
-
-  // b.on('file', function (file, id, parent) {
-  //   console.log("file: %s", file);
-  // });
 
   b.on('error', function (err) {
     console.log(err);
@@ -137,51 +203,6 @@ EstrnBrowserify.prototype.buildMainBundles = function(watch) {
     fileObj.deps = this.dependencies;
     bundle(fileObj, false, this.externalModules, this.watch);
   }.bind(this));
-}
-
-function bundle(options, requires, external, watch) {
-  if (!watch) {
-    var b = browserify();
-  }
-  else {
-    var b = browserify({ cache: {}, packageCache: {} });
-    b = watchify(b);
-  }
-
-  if (requires.length) {
-    b.require(requires);
-
-    b.bundle(function(err, buf) {
-      fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
-      cache.vendorBundle = buf;
-    });
-  }
-
-  if (!external.length && options.file) {
-    b.external(external);
-    b.add(options.file);
-
-    b.bundle(function(err, buf) {
-      fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
-    });
-
-    b.on('update', function (ids) {
-      b.bundle(function(err, buf) {
-        if (options.concat) {
-          buf = cache.vendorBuffer + buf;
-        }
-        fs.writeFile(options.dest + '/bundle-'+options.name+'.js', buf);
-      });
-    });
-  }
-
-  b.on('error', function (err) {
-    console.log(err);
-  });
-
-  b.on('log', function (msg) {
-    console.log(chalk.yellow('Bundle ' + options.name) + ': ' + msg);
-  });
 }
 
 module.exports = EstrnBrowserify;
