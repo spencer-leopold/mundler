@@ -111,6 +111,8 @@ EstrnBrowserify.prototype.getVendorFiles = function(callback) {
 
   var self = this;
   var dir = this.vendor;
+  var processCwd = process.cwd();
+  var cwd = this.cwd || processCwd;
   var b;
 
   if (!this.watch) {
@@ -158,6 +160,11 @@ EstrnBrowserify.prototype.getVendorFiles = function(callback) {
       }
 
       self.externalModules.push(name);
+
+      if (file.charAt(0) !== '/') {
+        file = processCwd + '/' + file;
+      }
+
       b.require(file, { expose: name });
 
       next();
@@ -192,7 +199,8 @@ EstrnBrowserify.prototype.buildNewBundle = function(b, name) {
   });
 
   b.on('log', function (msg) {
-    console.log(chalk.yellow('Bundle dist') + ': ' + msg);
+    var formattedName = name.replace('bundle-', '');
+    console.log(chalk.yellow('Bundle ' + formattedName) + ': ' + msg);
   });
 }
 
