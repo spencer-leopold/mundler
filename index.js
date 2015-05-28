@@ -65,6 +65,8 @@ EstrnBrowserify.prototype.getBrowserNames = function() {
 EstrnBrowserify.prototype.getMainFiles = function(callback) {
   var self = this;
   var dir = this.app;
+  var processCwd = process.cwd();
+  var cwd = this.cwd || processCwd;
   var b;
 
   if (!this.watch) {
@@ -79,17 +81,19 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
     b.external(this.externalModules);
   }
 
-  glob(dir+'/**/*.js', {}, function(err, filesArr) {
+  glob(dir, { cwd: cwd }, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
-      // var name = path.basename(file, '.jsx');
-      // var appName = 'app/dashboard/app/';
-      // var replaceWith = 'app/';
-      // var expose = file.replace(appName, replaceWith).replace('.jsx', '').replace('.js', '');
-      // var fileObj = { file: './'+file, expose: expose };
-      //
-      // self.files.push(fileObj);
-      var expose = file.replace(dir, '.');
-      b.add(file, { expose: expose });
+
+      var filepath;
+
+      if (cwd === processCwd) {
+        filePath = cwd + '/' + file;
+      }
+      else {
+        filePath = processCwd + '/' + cwd + '/' + file;
+      }
+
+      b.add(filePath, { expose: file });
 
       next();
     });
