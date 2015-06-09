@@ -2,6 +2,7 @@ var browserify = require('browserify');
 var watchify = require('watchify');
 var fs = require('fs');
 var path = require('path');
+var exec = require('child_process').exec;
 var async = require('async');
 var chokidar = require('chokidar');
 var glob = require('glob')
@@ -11,37 +12,42 @@ var cache = {};
 chalk.enabled = true;
 
 function EstrnBrowserify(options) {
+  var self = this;
+  var watchAll = ~process.argv.indexOf('watch-all')
   this.files = [];
   this.externalModules = [];
   this.vendorRequires = [];
 
-  this.cwd = options.cwd;
-  this.app = options.app;
-  this.vendor = options.vendor;
-  this.dest = options.output;
-  this.concat = options.concat || false;
-  this.watch = options.watch || false;
-
-  var self = this;
-
   async.series([
     function(callback) {
-      self.getVendorFiles(callback);
+      if (!options.vendor) {
+        callback();
+      }
+      else {
+        var bundleProps = options.vendor;
+        if (watchAll || ~process.argv.indexOf('watch-vendor')) {
+          bundleProps.watch = true;
+        }
+        self.getVendorFiles(bundleProps, callback);
+      }
     },
     function(callback) {
-      self.getMainFiles(callback);
+      for (var bundle in options) {
+        if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
+          var bundleProps = options[bundle];
+          if (watchAll || ~process.argv.indexOf('watch-'+bundle)) {
+            bundleProps.watch = true;
+          }
+          self.getMainFiles(bundle, bundleProps, callback);
+        }
+      }
     }
   ]);
 }
 
-EstrnBrowserify.prototype.getDeps = function() {
-  var deps = require(process.cwd() + '/package.json').dependencies;
-
-  if (deps) {
-    return Object.keys(deps);
-  }
-
-  return [];
+EstrnBrowserify.prototype.getVendorRequires = function() {
+  var deps = require(process.cwd() + '/package.json').vendorDependencies;
+  return deps || [];
 }
 
 EstrnBrowserify.prototype.getBrowserNames = function() {
@@ -62,14 +68,15 @@ EstrnBrowserify.prototype.getBrowserNames = function() {
   return false;
 }
 
-EstrnBrowserify.prototype.getMainFiles = function(callback) {
+EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
   var self = this;
-  var dir = this.app;
   var processCwd = process.cwd();
-  var cwd = this.cwd || processCwd;
+  var src = props.src;
+  var dest = props.dest;
+  var cwd = props.cwd || processCwd;
   var b;
 
-  if (!this.watch) {
+  if (!props.watch) {
     b = browserify();
   }
   else {
@@ -81,9 +88,8 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
     b.external(this.externalModules);
   }
 
-  glob(dir, { cwd: cwd }, function(err, filesArr) {
+  glob(src, { cwd: cwd }, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
-
       var filepath;
 
       if (cwd === processCwd) {
@@ -98,24 +104,21 @@ EstrnBrowserify.prototype.getMainFiles = function(callback) {
       next();
     });
 
-    self.buildNewBundle(b, 'bundle-main');
+    self.buildNewBundle(b, bundleKey, dest, props.watch);
     callback();
   });
 }
 
 
-EstrnBrowserify.prototype.getVendorFiles = function(callback) {
-  if (!this.vendor) {
-    return callback();
-  }
-
+EstrnBrowserify.prototype.getVendorFiles = function(props, callback) {
   var self = this;
-  var dir = this.vendor;
   var processCwd = process.cwd();
-  var cwd = this.cwd || processCwd;
+  var src = props.src;
+  var dest = props.dest;
+  var cwd = props.cwd || processCwd;
   var b;
 
-  if (!this.watch) {
+  if (!props.watch) {
     b = browserify();
   }
   else {
@@ -131,22 +134,38 @@ EstrnBrowserify.prototype.getVendorFiles = function(callback) {
     browserFiles = Object.keys(browserNames);
   }
 
-  // Check for any dependencies installed through node
-  var deps = this.getDeps();
-  depsTotal = deps.length;
+  // // Check for any dependencies installed through node
+  // var deps = this.getVendorRequires();
+  // depsTotal = deps.length;
+  //
+  // // If we have some node deps, require them into the 
+  // // vendor bundle and add it as and external dependency
+  // // for out main bundles. Common use case is for LoDash
+  // // and other front end packages availabe in npm
+  // for (var i = 0; i < depsTotal; i++) {
+  //   var dep = deps[i];
+  //
+  //   b.require(dep);
+  //   this.externalModules.push(dep);
+  // }
 
-  // If we have some node deps, require them into the 
-  // vendor bundle and add it as and external dependency
-  // for out main bundles. Common use case is for LoDash
-  // and other front end packages availabe in npm
-  for (var i = 0; i < depsTotal; i++) {
-    var dep = deps[i];
+  if (props.requires) {
+    var deps = props.requires;
+    depsTotal = deps.length;
 
-    b.require(dep);
-    this.externalModules.push(dep);
+    // If we have some node deps, require them into the 
+    // vendor bundle and add it as and external dependency
+    // for out main bundles. Common use case is for LoDash
+    // and other front end packages availabe in npm
+    for (var i = 0; i < depsTotal; i++) {
+      var dep = deps[i];
+
+      b.require(dep);
+      this.externalModules.push(dep);
+    }
   }
 
-  glob(dir+'/**/*.js', {}, function(err, filesArr) {
+  glob(src, { cwd: cwd }, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
       var name = path.basename(file, '.js');
 
@@ -162,7 +181,12 @@ EstrnBrowserify.prototype.getVendorFiles = function(callback) {
       self.externalModules.push(name);
 
       if (file.charAt(0) !== '/') {
-        file = processCwd + '/' + file;
+        if (cwd === processCwd) {
+          file = cwd + '/' + file;
+        }
+        else {
+          file = processCwd + '/' + cwd + '/' + file;
+        }
       }
 
       b.require(file, { expose: name });
@@ -170,27 +194,40 @@ EstrnBrowserify.prototype.getVendorFiles = function(callback) {
       next();
     });
 
-    self.buildNewBundle(b, 'bundle-vendor');
+    self.buildNewBundle(b, 'vendor', dest, props.watch);
     callback();
   });
 }
 
-EstrnBrowserify.prototype.buildNewBundle = function(b, name) {
+EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, watched) {
 
-  console.time('Browserify '+name+' written in');
+  if (!watched) {
+    console.time(chalk.yellow('Bundle '+name) + ' written in');
+  }
+
+  var run = exec('npm run jshint -s');
+  run.on('exit', function(code) {
+    if (code !== 0) {
+      console.log('FAILURE for %s', name);
+    }
+  });
+  run.stdout.pipe(process.stdout)
+
   b.bundle(function(err, buf) {
-    fs.writeFile('./dist/js/'+name+'.js', buf, function(err) {
+    fs.writeFile(dest, buf, function(err) {
       if (err) {
         return console.log("write error: %s", err);
       }
 
-      console.timeEnd('Browserify '+name+' written in');
+      if (!watched) {
+        console.timeEnd(chalk.yellow('Bundle '+name) + ' written in');
+      }
     });
   });
 
   b.on('update', function (ids) {
     b.bundle(function(err, buf) {
-      fs.writeFile('./dist/js/'+name+'.js', buf);
+      fs.writeFile(dest, buf);
     });
   });
 
@@ -199,8 +236,7 @@ EstrnBrowserify.prototype.buildNewBundle = function(b, name) {
   });
 
   b.on('log', function (msg) {
-    var formattedName = name.replace('bundle-', '');
-    console.log(chalk.yellow('Bundle ' + formattedName) + ': ' + msg);
+    console.log(chalk.yellow('Bundle ' + name) + ': ' + msg);
   });
 }
 
