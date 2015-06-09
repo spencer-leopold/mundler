@@ -88,6 +88,10 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
     b.external(this.externalModules);
   }
 
+  b.require('reaction');
+
+  var method = (props.global) ? 'require' : 'add';
+
   glob(src, { cwd: cwd }, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
       var filepath;
@@ -99,7 +103,20 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
         filePath = processCwd + '/' + cwd + '/' + file;
       }
 
-      b.add(filePath, { expose: file });
+      // Append a prefix if set
+      if (props.prefixPath) {
+        file = props.prefixPath + file;
+      }
+
+      // Strip filename
+      file = file.substring(0, file.lastIndexOf('.'));
+
+      // Output the exposed path if debug is true
+      if (props.debug) {
+        console.log("Exposed filepath: %s", file)
+      }
+
+      b[method](filePath, { expose: file });
 
       next();
     });
