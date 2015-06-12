@@ -94,31 +94,37 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
 
   glob(src, { cwd: cwd }, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
-      var filepath;
 
-      if (cwd === processCwd) {
-        filePath = cwd + '/' + file;
+      if (props.ignore && ~props.ignore.indexOf(file)) {
+        next();
       }
       else {
-        filePath = processCwd + '/' + cwd + '/' + file;
+        var filepath;
+
+        if (cwd === processCwd) {
+          filePath = cwd + '/' + file;
+        }
+        else {
+          filePath = processCwd + '/' + cwd + '/' + file;
+        }
+
+        // Append a prefix if set
+        if (props.prefixPath) {
+          file = props.prefixPath + file;
+        }
+
+        // Strip filename
+        file = file.substring(0, file.lastIndexOf('.'));
+
+        // Output the exposed path if debug is true
+        if (props.debug) {
+          console.log("Exposed filepath: %s", file)
+        }
+
+        b[method](filePath, { expose: file });
+
+        next();
       }
-
-      // Append a prefix if set
-      if (props.prefixPath) {
-        file = props.prefixPath + file;
-      }
-
-      // Strip filename
-      file = file.substring(0, file.lastIndexOf('.'));
-
-      // Output the exposed path if debug is true
-      if (props.debug) {
-        console.log("Exposed filepath: %s", file)
-      }
-
-      b[method](filePath, { expose: file });
-
-      next();
     });
 
     self.buildNewBundle(b, bundleKey, dest, props.watch);
@@ -221,14 +227,6 @@ EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, watched) {
   if (!watched) {
     console.time(chalk.yellow('Bundle '+name) + ' written in');
   }
-
-  var run = exec('npm run jshint -s');
-  run.on('exit', function(code) {
-    if (code !== 0) {
-      console.log('FAILURE for %s', name);
-    }
-  });
-  run.stdout.pipe(process.stdout)
 
   b.bundle(function(err, buf) {
     fs.writeFile(dest, buf, function(err) {
