@@ -88,46 +88,23 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
     b.external(this.externalModules);
   }
 
-  b.require('reaction');
-
-  var method = (props.global) ? 'require' : 'add';
-
   glob(src, { cwd: cwd }, function(err, filesArr) {
     async.each(filesArr, function(file, next) {
+      var filepath;
 
-      if (props.ignore && ~props.ignore.indexOf(file)) {
-        next();
+      if (cwd === processCwd) {
+        filePath = cwd + '/' + file;
       }
       else {
-        var filepath;
-
-        if (cwd === processCwd) {
-          filePath = cwd + '/' + file;
-        }
-        else {
-          filePath = processCwd + '/' + cwd + '/' + file;
-        }
-
-        // Append a prefix if set
-        if (props.prefixPath) {
-          file = props.prefixPath + file;
-        }
-
-        // Strip filename
-        file = file.substring(0, file.lastIndexOf('.'));
-
-        // Output the exposed path if debug is true
-        if (props.debug) {
-          console.log("Exposed filepath: %s", file)
-        }
-
-        b[method](filePath, { expose: file });
-
-        next();
+        filePath = processCwd + '/' + cwd + '/' + file;
       }
+
+      b.add(filePath, { expose: file });
+
+      next();
     });
 
-    self.buildNewBundle(b, bundleKey, dest, props.watch);
+    self.buildNewBundle(b, bundleKey, dest, props);
     callback();
   });
 }
@@ -217,15 +194,23 @@ EstrnBrowserify.prototype.getVendorFiles = function(props, callback) {
       next();
     });
 
-    self.buildNewBundle(b, 'vendor', dest, props.watch);
+    self.buildNewBundle(b, 'vendor', dest, props);
     callback();
   });
 }
 
-EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, watched) {
+EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, props) {
 
-  if (!watched) {
+  if (!props.watch) {
     console.time(chalk.yellow('Bundle '+name) + ' written in');
+  }
+
+  if (props.preBundle) {
+    if (typeof props.preBundle !== 'function') {
+      throw new Error('preBundle must be a function');
+    }
+
+    b = props.preBundle(b);
   }
 
   b.bundle(function(err, buf) {
@@ -234,13 +219,21 @@ EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, watched) {
         return console.log("write error: %s", err);
       }
 
-      if (!watched) {
+      if (!props.watch) {
         console.timeEnd(chalk.yellow('Bundle '+name) + ' written in');
       }
     });
   });
 
   b.on('update', function (ids) {
+    if (props.preBundle) {
+      if (typeof props.preBundle !== 'function') {
+        throw new Error('preBundle must be a function');
+      }
+
+      b = props.preBundle(b);
+    }
+
     b.bundle(function(err, buf) {
       fs.writeFile(dest, buf);
     });
