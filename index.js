@@ -11,9 +11,26 @@ var chalk = require('chalk');
 var cache = {};
 chalk.enabled = true;
 
-function EstrnBrowserify(options) {
+function EstrnBrowserify(options, args) {
   var self = this;
-  var watchAll = ~process.argv.indexOf('watch-all')
+
+  if (!options) {
+    var package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+    if (package.estrn_browserify) {
+      options = package.estrn_browserify;
+    }
+    else {
+      try {
+        options = require(process.cwd()+'/node-scripts/estrn-rowserify');
+      }
+      catch (e) {
+        throw new Error('Cannot find estrn-browserify.js configuration');
+      }
+    }
+  }
+
+  var watchAll = args.watch === 'all';
   this.files = [];
   this.externalModules = [];
   this.vendorRequires = [];
