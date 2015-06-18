@@ -22,7 +22,7 @@ function EstrnBrowserify(options, args) {
     }
     else {
       try {
-        options = require(process.cwd()+'/node-scripts/estrn-rowserify');
+        options = require(process.cwd()+'/estrn-browserify');
       }
       catch (e) {
         throw new Error('Cannot find estrn-browserify.js configuration');
@@ -106,6 +106,11 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
   }
 
   glob(src, { cwd: cwd }, function(err, filesArr) {
+    if (err) {
+      console.log(err);
+      return false;
+    }
+
     async.each(filesArr, function(file, next) {
       var filepath;
 
@@ -183,6 +188,11 @@ EstrnBrowserify.prototype.getVendorFiles = function(props, callback) {
   }
 
   glob(src, { cwd: cwd }, function(err, filesArr) {
+    if (err) {
+      console.log(err);
+      return false;
+    }
+
     async.each(filesArr, function(file, next) {
       var name = path.basename(file, '.js');
 
