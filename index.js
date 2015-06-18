@@ -42,7 +42,7 @@ function EstrnBrowserify(options, args) {
       }
       else {
         var bundleProps = options.vendor;
-        if (watchAll || ~process.argv.indexOf('watch-vendor')) {
+        if (watchAll || ~args.watch.indexOf('vendor')) {
           bundleProps.watch = true;
         }
         self.getVendorFiles(bundleProps, callback);
@@ -52,7 +52,7 @@ function EstrnBrowserify(options, args) {
       for (var bundle in options) {
         if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
           var bundleProps = options[bundle];
-          if (watchAll || ~process.argv.indexOf('watch-'+bundle)) {
+          if (watchAll || ~args.watch.indexOf(bundle)) {
             bundleProps.watch = true;
           }
           self.getMainFiles(bundle, bundleProps, callback);
