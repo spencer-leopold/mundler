@@ -11,21 +11,21 @@ var chalk = require('chalk');
 var cache = {};
 chalk.enabled = true;
 
-function EstrnBrowserify(options, args) {
+function Mundler(options, args) {
   var self = this;
 
   if (!options) {
     var package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
-    if (package.estrn_browserify) {
-      options = package.estrn_browserify;
+    if (package.mundler) {
+      options = package.mundler;
     }
     else {
       try {
-        options = require(process.cwd()+'/estrn-browserify');
+        options = require(process.cwd()+'/mundler.config');
       }
       catch (e) {
-        throw new Error('Cannot find estrn-browserify.js configuration');
+        throw new Error('Cannot find mundler.config.js configuration');
       }
     }
   }
@@ -34,40 +34,54 @@ function EstrnBrowserify(options, args) {
   this.files = [];
   this.externalModules = [];
   this.vendorRequires = [];
+  this.browserFiles = [];
 
-  async.series([
-    function(callback) {
-      if (!options.vendor) {
-        callback();
-      }
-      else {
-        var bundleProps = options.vendor;
-        if (watchAll || ~args.watch.indexOf('vendor')) {
-          bundleProps.watch = true;
-        }
-        self.getVendorFiles(bundleProps, callback);
-      }
-    },
-    function(callback) {
-      for (var bundle in options) {
-        if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
-          var bundleProps = options[bundle];
-          if (watchAll || ~args.watch.indexOf(bundle)) {
-            bundleProps.watch = true;
+  var browserNames = this.getBrowserDeps();
+  var browserShims = this.getBrowserDeps(true);
+  var self = this;
+
+  browserNames.then(function(names) {
+    browserShims.then(function(shims) {
+      self.browserFiles = names.concat(shims);
+
+      async.series([
+        function(callback) {
+          for (var bundle in options) {
+            if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
+              var bundleProps = options[bundle];
+              self.getExternalDeps(bundle, bundleProps, callback);
+            }
           }
-          self.getMainFiles(bundle, bundleProps, callback);
+        },
+        function(callback) {
+          if (!options.vendor) {
+            callback();
+          }
+          else {
+            var bundleProps = options.vendor;
+            if (watchAll || ~args.watch.indexOf('vendor')) {
+              bundleProps.watch = true;
+            }
+            self.getVendorFiles(bundleProps, callback);
+          }
+        },
+        function(callback) {
+          for (var bundle in options) {
+            if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
+              var bundleProps = options[bundle];
+              if (watchAll || ~args.watch.indexOf(bundle)) {
+                bundleProps.watch = true;
+              }
+              self.getMainFiles(bundle, bundleProps, callback);
+            }
+          }
         }
-      }
-    }
-  ]);
+      ]);
+    })
+  });
 }
 
-EstrnBrowserify.prototype.getVendorRequires = function() {
-  var deps = require(process.cwd() + '/package.json').vendorDependencies;
-  return deps || [];
-}
-
-EstrnBrowserify.prototype.getBrowserNames = function() {
+Mundler.prototype.getBrowserNames = function() {
   var browserNames = require(process.cwd() + '/package.json').browser;
 
   if (browserNames) {
@@ -85,7 +99,105 @@ EstrnBrowserify.prototype.getBrowserNames = function() {
   return false;
 }
 
-EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
+Mundler.prototype.getBrowserDeps = function(shims) {
+  var browserNames;
+
+  if (shims) {
+    browserNames = require(process.cwd() + '/package.json')['browserify-shim'] || {};
+  }
+  else {
+    browserNames = require(process.cwd() + '/package.json').browser || {};
+  }
+
+  return Promise.all(Object.keys(browserNames)
+    .map(function(key) {
+      return key;
+    })
+  ).then(function(names) {
+    return names;
+  });
+}
+
+Mundler.prototype.readFile = function(file) {
+  return new Promise(function(resolve, reject) {
+    fs.readFile(file, 'utf8', function(err, data) {
+      if (err) {
+        reject(err);
+      }
+      else {
+        resolve(data);
+      }
+    });
+  });
+}
+
+Mundler.prototype.findExternalDependencies = function(files, props) {
+  var self = this;
+  var regex = /(?:require\(|import(?:\s.*\sfrom)?\s)(?:'|")(.*?)(?:'|")(\))?;/g;
+  var m = [];
+
+  return Promise.all(files
+    .map(function(file) {
+      return self.readFile(file).then(function(data) {
+        var matches = [];
+        for (var m = null; m = regex.exec(data); matches.push(m[1]));
+
+        return Promise.all(matches
+          .map(function(match) {
+            return self.processMatch(file, match, props);
+          })
+        );
+      });
+    })
+  ).then(function(matches) {
+    return self.externalModules;
+  });
+}
+
+Mundler.prototype.processMatch = function(file, match, props) {
+  var self = this;
+  var processCwd = process.cwd();
+  var cwd = props.cwd || processCwd;
+
+  // vendor require
+  if (match.charAt(0) !== '.') {
+    if (self.browserFiles.indexOf(match) === -1) {
+      self.externalModules.push(match);
+      return match;
+    }
+  }
+  else {
+    // Recurse through all application files to check for other
+    // external dependencies
+    var pathToFile = processCwd + '/' + cwd;
+
+    if (cwd === processCwd) {
+      pathToFile = processCwd + '/' + file.substring(0, file.lastIndexOf('/'));
+    }
+
+    var filePath = path.resolve(pathToFile, match) + '.js';
+
+    // remove cwd from path so everything is relative
+    filePath = filePath.replace(processCwd + '/', '');
+    return self.findExternalDependencies([filePath], props);
+  }
+}
+
+Mundler.prototype.getExternalDeps = function(bundleKey, props, callback) {
+  var self = this;
+  var src = props.src;
+  var processCwd = process.cwd();
+  var cwd = props.cwd || processCwd;
+
+  glob(src, { cwd: cwd }, function(err, filesArr) {
+    self.findExternalDependencies(filesArr, props).then(function(modules) {
+      self.externalModules = modules;
+      callback();
+    });
+  });
+}
+
+Mundler.prototype.getMainFiles = function(bundleKey, props, callback) {
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
@@ -101,7 +213,7 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
     b = watchify(b);
   }
 
-  if (this.externalModules) {
+  if (this.externalModules.length) {
     b.external(this.externalModules);
   }
 
@@ -126,18 +238,19 @@ EstrnBrowserify.prototype.getMainFiles = function(bundleKey, props, callback) {
       next();
     });
 
-    self.buildNewBundle(b, bundleKey, dest, props);
+    self.buildBundle(b, bundleKey, dest, props);
     callback();
   });
 }
 
 
-EstrnBrowserify.prototype.getVendorFiles = function(props, callback) {
+Mundler.prototype.getVendorFiles = function(props, callback) {
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
   var dest = props.dest;
   var cwd = props.cwd || processCwd;
+  var browserFiles = false;
   var b;
 
   if (!props.watch) {
@@ -149,42 +262,14 @@ EstrnBrowserify.prototype.getVendorFiles = function(props, callback) {
   }
 
   // Check for custom browser expose names in package.json
-  var browserFiles = false;
   var browserNames = this.getBrowserNames();
 
   if (browserNames) {
     browserFiles = Object.keys(browserNames);
   }
 
-  // // Check for any dependencies installed through node
-  // var deps = this.getVendorRequires();
-  // depsTotal = deps.length;
-  //
-  // // If we have some node deps, require them into the 
-  // // vendor bundle and add it as and external dependency
-  // // for out main bundles. Common use case is for LoDash
-  // // and other front end packages availabe in npm
-  // for (var i = 0; i < depsTotal; i++) {
-  //   var dep = deps[i];
-  //
-  //   b.require(dep);
-  //   this.externalModules.push(dep);
-  // }
-
-  if (props.requires) {
-    var deps = props.requires;
-    depsTotal = deps.length;
-
-    // If we have some node deps, require them into the 
-    // vendor bundle and add it as and external dependency
-    // for out main bundles. Common use case is for LoDash
-    // and other front end packages availabe in npm
-    for (var i = 0; i < depsTotal; i++) {
-      var dep = deps[i];
-
-      b.require(dep);
-      this.externalModules.push(dep);
-    }
+  if (this.externalModules.length) {
+    b.require(this.externalModules);
   }
 
   glob(src, { cwd: cwd }, function(err, filesArr) {
@@ -221,12 +306,12 @@ EstrnBrowserify.prototype.getVendorFiles = function(props, callback) {
       next();
     });
 
-    self.buildNewBundle(b, 'vendor', dest, props);
+    self.buildBundle(b, 'vendor', dest, props);
     callback();
   });
 }
 
-EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, props) {
+Mundler.prototype.buildBundle = function(b, name, dest, props) {
 
   if (!props.watch) {
     console.time(chalk.yellow('Bundle '+name) + ' written in');
@@ -275,18 +360,4 @@ EstrnBrowserify.prototype.buildNewBundle = function(b, name, dest, props) {
   });
 }
 
-EstrnBrowserify.prototype.buildVendorBundle = function(watch) {
-  bundle({ name: 'vendor', concat: this.concat, dest: this.dest, deps: this.dependencies }, this.vendorRequires, false, this.watch);
-}
-
-
-EstrnBrowserify.prototype.buildMainBundles = function(watch) {
-  async.each(this.files, function(fileObj, next) {
-    fileObj.concat = this.concat;
-    fileObj.dest = this.dest;
-    fileObj.deps = this.dependencies;
-    bundle(fileObj, false, this.externalModules, this.watch);
-  }.bind(this));
-}
-
-module.exports = EstrnBrowserify;
+module.exports = Mundler;

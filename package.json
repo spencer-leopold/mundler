@@ -1,5 +1,5 @@
 {
-  "name": "estrn-browserify",
+  "name": "mundler",
   "version": "1.0.0",
   "description": "Utility to build multiple browserify bundles",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:spencer_leopold/estrn-browserify.git"
+    "url": "git@bitbucket.org:spencer_leopold/mundler.git"
   },
   "keywords": [
     "browserify",
@@ -16,20 +16,18 @@
   ],
   "author": {
     "name": "Spencer Leopold",
-    "email": "spencerl@easternstandard.com"
+    "email": "spencer.leopold@gmail.com"
   },
   "license": "ISC",
   "dependencies": {
     "async": "^0.9.0",
     "browserify": "^9.0.7",
     "chalk": "^0.5.1",
-    "chokidar": "^1.0.1",
     "glob": "^4.3.5",
-    "object-assign": "^2.0.0",
     "watchify": "^3.1.0",
     "yargs": "^2.1.1"
   },
   "bin": {
-    "estrn-browserify": "./bin.js"
+    "mundler": "./bin.js"
   }
 }

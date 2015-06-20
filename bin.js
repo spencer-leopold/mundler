@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var EstrnBrowserify = require('./');
+var Mundler = require('./');
 var argv = require('yargs')
-    .usage('Usage: estrn-browserify --app [app] --cwd [cwd] -n [name] --vendor [vendor] -n [name] -o [dest] -c [bool] -w [bool]')
+    .usage('Usage: mundler --app [app] --cwd [cwd] -n [name] --vendor [vendor] -n [name] -o [dest] -c [bool] -w [bool]')
     .describe('app', 'The directory containing application builds')
     .describe('vendor', 'The direcotry containing vendor scripts')
     .describe('cwd', 'Current Working Directory, [required]')
@@ -16,4 +16,4 @@ var argv = require('yargs')
     .describe('w', 'Whether to watch source directory')
     .argv;
 
-new EstrnBrowserify(null, argv);
+new Mundler(null, argv);
