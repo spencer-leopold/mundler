@@ -42,59 +42,28 @@ function Mundler(options, args) {
     browserShims.then(function(shims) {
       self.browserFiles = names.concat(shims);
 
-      async.series([
-        function(callback) {
-          for (var bundle in options) {
-            if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
-              var bundleProps = options[bundle];
-              self.checkFilesForDependencies(bundle, bundleProps, callback);
-            }
+      for (var bundle in options) {
+        if (options.hasOwnProperty(bundle)) {
+
+          var bundleProps = options[bundle];
+
+          if (watchAll || ~args.watch.indexOf(bundle)) {
+            bundleProps.watch = true;
           }
-        },
-        function(callback) {
-          if (!options.vendor) {
-            callback();
-          }
-          else {
-            var bundleProps = options.vendor;
-            if (watchAll || ~args.watch.indexOf('vendor')) {
-              bundleProps.watch = true;
-            }
-            self.buildVendorBundle(bundleProps, callback);
-          }
-        },
-        function(callback) {
-          for (var bundle in options) {
-            if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
-              var bundleProps = options[bundle];
-              if (watchAll || ~args.watch.indexOf(bundle)) {
-                bundleProps.watch = true;
-              }
-              self.buildBundle(bundle, bundleProps, callback);
-            }
-          }
+
+          self.checkFilesForDependencies(bundle, bundleProps).then(function(externalModules) {
+            self.buildBundle(bundle, bundleProps, externalModules, names, shims);
+          });
         }
-      ]);
-    })
+      }
+    });
   });
 }
 
 Mundler.prototype.browserAliasCheck = function() {
-  var browserNames = require(process.cwd() + '/package.json').browser;
+  var browserNames = require(process.cwd() + '/package.json').browser || false;
 
-  if (browserNames) {
-    var obj = {};
-
-    for (var prop in browserNames) {
-      if (browserNames.hasOwnProperty(prop)) {
-        obj[browserNames[prop]] = prop;
-      }
-    }
-
-    return obj;
-  }
-
-  return false;
+  return browserNames;
 }
 
 Mundler.prototype.loadBrowserConfig = function(shims) {
@@ -129,10 +98,10 @@ Mundler.prototype.readFile = function(file) {
   });
 }
 
-Mundler.prototype.searchForDependencies = function(files, props) {
+Mundler.prototype.searchForDependencies = function(files, props, moduleArr) {
   var self = this;
   var regex = /(?:require\(|import(?:\s.*\sfrom)?\s)(?:'|")(.*?)(?:'|")(\))?;/g;
-  var m = [];
+  var modules = moduleArr || [];
 
   return Promise.all(files
     .map(function(file) {
@@ -142,17 +111,26 @@ Mundler.prototype.searchForDependencies = function(files, props) {
 
         return Promise.all(matches
           .map(function(match) {
-            return self.processMatch(file, match, props);
+            return self.processMatch(file, match, props, modules);
           })
-        );
-      });
+        ).then(function(matchList) {
+          return matchList
+            .filter(function(module) {
+              return (typeof module === 'string');
+            })
+            .map(function(module) {
+              modules.push(module);
+              return module;
+            });
+        });
+      }).catch(console.log);
     })
-  ).then(function(matches) {
-    return self.externalModules;
+  ).then(function() {
+    return modules;
   });
 }
 
-Mundler.prototype.processMatch = function(file, match, props) {
+Mundler.prototype.processMatch = function(file, match, props, modules) {
   var self = this;
   var processCwd = process.cwd();
   var cwd = props.cwd || processCwd;
@@ -160,8 +138,11 @@ Mundler.prototype.processMatch = function(file, match, props) {
   // vendor require
   if (match.charAt(0) !== '.') {
     if (self.browserFiles.indexOf(match) === -1) {
-      self.externalModules.push(match);
+      // self.externalModules.push(match);
       return match;
+    }
+    else {
+      return false;
     }
   }
   else {
@@ -177,25 +158,26 @@ Mundler.prototype.processMatch = function(file, match, props) {
 
     // remove cwd from path so everything is relative
     filePath = filePath.replace(processCwd + '/', '');
-    return self.searchForDependencies([filePath], props);
+    return self.searchForDependencies([filePath], props, modules);
   }
 }
 
-Mundler.prototype.checkFilesForDependencies = function(bundleKey, props, callback) {
+Mundler.prototype.checkFilesForDependencies = function(bundleKey, props) {
   var self = this;
   var src = props.src;
   var processCwd = process.cwd();
   var cwd = props.cwd || processCwd;
 
-  glob(src, { cwd: cwd }, function(err, filesArr) {
-    self.searchForDependencies(filesArr, props).then(function(modules) {
-      self.externalModules = modules;
-      callback();
+  return new Promise(function(resolve, reject) {
+    glob(src, { cwd: cwd }, function(err, filesArr) {
+      self.searchForDependencies(filesArr, props).then(function(modules) {
+        resolve(modules);
+      });
     });
   });
 }
 
-Mundler.prototype.buildBundle = function(bundleKey, props, callback) {
+Mundler.prototype.buildBundle = function(bundleKey, props, externalModules, names, shims) {
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
@@ -211,8 +193,14 @@ Mundler.prototype.buildBundle = function(bundleKey, props, callback) {
     b = watchify(b);
   }
 
-  if (this.externalModules.length) {
-    b.external(this.externalModules);
+  if (externalModules && externalModules.length) {
+    b.external(externalModules);
+
+    if (names && names.length) {
+      b.external(names);
+    }
+
+    self.buildVendorBundle('vendor-'+bundleKey, props, externalModules, names);
   }
 
   glob(src, { cwd: cwd }, function(err, filesArr) {
@@ -237,76 +225,35 @@ Mundler.prototype.buildBundle = function(bundleKey, props, callback) {
     });
 
     self.bundle(b, bundleKey, dest, props);
-    callback();
   });
 }
 
 
-Mundler.prototype.buildVendorBundle = function(props, callback) {
+Mundler.prototype.buildVendorBundle = function(bundleKey, props, externalModules, names) {
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
-  var dest = props.dest;
+  var dest = props.dest.substring(0, props.dest.lastIndexOf('/')) + '/' + bundleKey + '.js';
   var cwd = props.cwd || processCwd;
   var browserFiles = false;
-  var b;
+  var b = browserify();
 
-  if (!props.watch) {
-    b = browserify();
-  }
-  else {
-    b = browserify({ cache: {}, packageCache: {} });
-    b = watchify(b);
+  if (externalModules && externalModules.length) {
+    b.require(externalModules);
   }
 
-  // Check for custom browser expose names in package.json
-  var browserNames = this.browserAliasCheck();
+  if (names && names.length) {
+    // Check for custom browser expose names in package.json
+    var browserNames = this.browserAliasCheck();
 
-  if (browserNames) {
-    browserFiles = Object.keys(browserNames);
-  }
-
-  if (this.externalModules.length) {
-    b.require(this.externalModules);
-  }
-
-  glob(src, { cwd: cwd }, function(err, filesArr) {
-    if (err) {
-      console.log(err);
-      return false;
-    }
-
-    async.each(filesArr, function(file, next) {
-      var name = path.basename(file, '.js');
-
-      // If a custom expose name is defined in package.json
-      // use that instead of filename sans extension
-      if (browserFiles) {
-        var idx = browserFiles.indexOf(file);
-        if (idx !== -1) {
-          name = browserNames[browserFiles[idx]];
-        }
-      }
-
-      self.externalModules.push(name);
-
-      if (file.charAt(0) !== '/') {
-        if (cwd === processCwd) {
-          file = cwd + '/' + file;
-        }
-        else {
-          file = processCwd + '/' + cwd + '/' + file;
-        }
-      }
-
+    for (var i in names) {
+      var name = names[i];
+      var file = path.resolve(processCwd, browserNames[names]);
       b.require(file, { expose: name });
+    }
+  }
 
-      next();
-    });
-
-    self.bundle(b, 'vendor', dest, props);
-    callback();
-  });
+  self.bundle(b, bundleKey, dest, {});
 }
 
 Mundler.prototype.bundle = function(b, name, dest, props) {
