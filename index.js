@@ -34,8 +34,8 @@ function Mundler(options, args) {
   this.vendorRequires = [];
   this.browserFiles = [];
 
-  var browserNames = this.getBrowserDeps();
-  var browserShims = this.getBrowserDeps(true);
+  var browserNames = this.loadBrowserConfig();
+  var browserShims = this.loadBrowserConfig(true);
   var self = this;
 
   browserNames.then(function(names) {
@@ -47,7 +47,7 @@ function Mundler(options, args) {
           for (var bundle in options) {
             if (options.hasOwnProperty(bundle) && bundle !== 'vendor') {
               var bundleProps = options[bundle];
-              self.getExternalDeps(bundle, bundleProps, callback);
+              self.checkFilesForDependencies(bundle, bundleProps, callback);
             }
           }
         },
@@ -79,7 +79,7 @@ function Mundler(options, args) {
   });
 }
 
-Mundler.prototype.getBrowserNames = function() {
+Mundler.prototype.browserAliasCheck = function() {
   var browserNames = require(process.cwd() + '/package.json').browser;
 
   if (browserNames) {
@@ -97,7 +97,7 @@ Mundler.prototype.getBrowserNames = function() {
   return false;
 }
 
-Mundler.prototype.getBrowserDeps = function(shims) {
+Mundler.prototype.loadBrowserConfig = function(shims) {
   var browserNames;
 
   if (shims) {
@@ -129,7 +129,7 @@ Mundler.prototype.readFile = function(file) {
   });
 }
 
-Mundler.prototype.findExternalDependencies = function(files, props) {
+Mundler.prototype.searchForDependencies = function(files, props) {
   var self = this;
   var regex = /(?:require\(|import(?:\s.*\sfrom)?\s)(?:'|")(.*?)(?:'|")(\))?;/g;
   var m = [];
@@ -177,18 +177,18 @@ Mundler.prototype.processMatch = function(file, match, props) {
 
     // remove cwd from path so everything is relative
     filePath = filePath.replace(processCwd + '/', '');
-    return self.findExternalDependencies([filePath], props);
+    return self.searchForDependencies([filePath], props);
   }
 }
 
-Mundler.prototype.getExternalDeps = function(bundleKey, props, callback) {
+Mundler.prototype.checkFilesForDependencies = function(bundleKey, props, callback) {
   var self = this;
   var src = props.src;
   var processCwd = process.cwd();
   var cwd = props.cwd || processCwd;
 
   glob(src, { cwd: cwd }, function(err, filesArr) {
-    self.findExternalDependencies(filesArr, props).then(function(modules) {
+    self.searchForDependencies(filesArr, props).then(function(modules) {
       self.externalModules = modules;
       callback();
     });
@@ -260,7 +260,7 @@ Mundler.prototype.getVendorFiles = function(props, callback) {
   }
 
   // Check for custom browser expose names in package.json
-  var browserNames = this.getBrowserNames();
+  var browserNames = this.browserAliasCheck();
 
   if (browserNames) {
     browserFiles = Object.keys(browserNames);
