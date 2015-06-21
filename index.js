@@ -60,7 +60,7 @@ function Mundler(options, args) {
             if (watchAll || ~args.watch.indexOf('vendor')) {
               bundleProps.watch = true;
             }
-            self.getVendorFiles(bundleProps, callback);
+            self.buildVendorBundle(bundleProps, callback);
           }
         },
         function(callback) {
@@ -70,7 +70,7 @@ function Mundler(options, args) {
               if (watchAll || ~args.watch.indexOf(bundle)) {
                 bundleProps.watch = true;
               }
-              self.getMainFiles(bundle, bundleProps, callback);
+              self.buildBundle(bundle, bundleProps, callback);
             }
           }
         }
@@ -195,7 +195,7 @@ Mundler.prototype.checkFilesForDependencies = function(bundleKey, props, callbac
   });
 }
 
-Mundler.prototype.getMainFiles = function(bundleKey, props, callback) {
+Mundler.prototype.buildBundle = function(bundleKey, props, callback) {
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
@@ -236,13 +236,13 @@ Mundler.prototype.getMainFiles = function(bundleKey, props, callback) {
       next();
     });
 
-    self.buildBundle(b, bundleKey, dest, props);
+    self.bundle(b, bundleKey, dest, props);
     callback();
   });
 }
 
 
-Mundler.prototype.getVendorFiles = function(props, callback) {
+Mundler.prototype.buildVendorBundle = function(props, callback) {
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
@@ -304,12 +304,12 @@ Mundler.prototype.getVendorFiles = function(props, callback) {
       next();
     });
 
-    self.buildBundle(b, 'vendor', dest, props);
+    self.bundle(b, 'vendor', dest, props);
     callback();
   });
 }
 
-Mundler.prototype.buildBundle = function(b, name, dest, props) {
+Mundler.prototype.bundle = function(b, name, dest, props) {
 
   if (!props.watch) {
     console.time(chalk.yellow('Bundle '+name) + ' written in');
