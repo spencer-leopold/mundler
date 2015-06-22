@@ -6,7 +6,6 @@ var exec = require('child_process').exec;
 var async = require('async');
 var glob = require('glob')
 var chalk = require('chalk');
-var cache = {};
 chalk.enabled = true;
 
 function Mundler(o, args) {
