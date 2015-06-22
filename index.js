@@ -34,8 +34,8 @@ function Mundler(o, args) {
             bundleProps.watch = true;
           }
 
-          self.checkFilesForDependencies(bundle, bundleProps).then(function(externalModules) {
-            self.buildBundle(bundle, bundleProps, externalModules, names, shims);
+          self.checkFilesForDependencies(bundle, bundleProps).then(function(config) {
+            self.buildBundle(config.bundle, config.props, config.modules, names, shims);
           });
         }
       }
@@ -184,7 +184,7 @@ Mundler.prototype.checkFilesForDependencies = function(bundleKey, props) {
   return new Promise(function(resolve, reject) {
     glob(src, { cwd: cwd }, function(err, filesArr) {
       self.searchForDependencies(filesArr, props).then(function(modules) {
-        resolve(modules);
+        resolve({ bundle: bundleKey, props: props, modules: modules });
       });
     });
   });
