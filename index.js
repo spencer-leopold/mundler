@@ -9,26 +9,11 @@ var chalk = require('chalk');
 var cache = {};
 chalk.enabled = true;
 
-function Mundler(options, args) {
+function Mundler(o, args) {
   var self = this;
-
-  if (!options) {
-    var package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-
-    if (package.mundler) {
-      options = package.mundler;
-    }
-    else {
-      try {
-        options = require(process.cwd()+'/mundler.config');
-      }
-      catch (e) {
-        throw new Error('Cannot find mundler.config.js configuration');
-      }
-    }
-  }
-
+  var options = this._initOptions(o, args);
   var watchAll = args.watch === 'all';
+
   this.files = [];
   this.externalModules = [];
   this.vendorRequires = [];
@@ -36,7 +21,6 @@ function Mundler(options, args) {
 
   var browserNames = this.loadBrowserConfig();
   var browserShims = this.loadBrowserConfig(true);
-  var self = this;
 
   browserNames.then(function(names) {
     browserShims.then(function(shims) {
@@ -58,6 +42,36 @@ function Mundler(options, args) {
       }
     });
   });
+}
+
+Mundler.prototype._initOptions = function(options, args) {
+  if (!options) {
+    if (args.config) {
+      try {
+        options = require(args.config);
+      }
+      catch (e) {
+        throw e;
+      }
+    }
+    else {
+      var package = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+
+      if (package.mundler) {
+        options = package.mundler;
+      }
+      else {
+        try {
+          options = require(process.cwd()+'/mundler.config');
+        }
+        catch (e) {
+          throw new Error('Cannot find mundler.config.js configuration');
+        }
+      }
+    }
+  }
+
+  return options;
 }
 
 Mundler.prototype.browserAliasCheck = function() {
@@ -233,9 +247,8 @@ Mundler.prototype.buildVendorBundle = function(bundleKey, props, externalModules
   var self = this;
   var processCwd = process.cwd();
   var src = props.src;
-  var dest = props.dest.substring(0, props.dest.lastIndexOf('/')) + '/' + bundleKey + '.js';
+  var dest = (~props.dest.indexOf('.js')) ? props.dest.substring(0, props.dest.lastIndexOf('/')) + '/' + bundleKey + '.js' : props.dest;
   var cwd = props.cwd || processCwd;
-  var browserFiles = false;
   var b = browserify();
 
   if (externalModules && externalModules.length) {
