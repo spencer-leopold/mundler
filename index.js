@@ -11,7 +11,7 @@ chalk.enabled = true;
 function Mundler(o, args) {
   var self = this;
   var options = this._initOptions(o, args);
-  var watchAll = args.watch === 'all';
+  var watchAll = (args.watch && args.watch === 'all');
 
   this.files = [];
   this.externalModules = [];
@@ -30,7 +30,7 @@ function Mundler(o, args) {
 
           var bundleProps = options[bundle];
 
-          if (watchAll || ~args.watch.indexOf(bundle)) {
+          if (watchAll || args.watch && ~args.watch.indexOf(bundle)) {
             bundleProps.watch = true;
           }
 
