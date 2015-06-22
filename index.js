@@ -1,8 +1,10 @@
-var browserify = require('browserify');
-var watchify = require('watchify');
+// @TODO: get rid of last async usage so we can remove dependency
 var fs = require('fs');
 var path = require('path');
 var exec = require('child_process').exec;
+var browserify = require('browserify');
+var watchify = require('watchify');
+var Promise = require('when');
 var async = require('async');
 var glob = require('glob')
 var chalk = require('chalk');
@@ -99,7 +101,7 @@ Mundler.prototype.loadBrowserConfig = function(shims) {
 }
 
 Mundler.prototype.readFile = function(file) {
-  return new Promise(function(resolve, reject) {
+  return Promise.promise(function(resolve, reject) {
     fs.readFile(file, 'utf8', function(err, data) {
       if (err) {
         reject(err);
@@ -181,7 +183,7 @@ Mundler.prototype.checkFilesForDependencies = function(bundleKey, props) {
   var processCwd = process.cwd();
   var cwd = props.cwd || processCwd;
 
-  return new Promise(function(resolve, reject) {
+  return Promise.promise(function(resolve, reject) {
     glob(src, { cwd: cwd }, function(err, filesArr) {
       self.searchForDependencies(filesArr, props).then(function(modules) {
         resolve({ bundle: bundleKey, props: props, modules: modules });
