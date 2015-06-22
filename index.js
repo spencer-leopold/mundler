@@ -1,11 +1,9 @@
-// @TODO: get rid of last async usage so we can remove dependency
 var fs = require('fs');
 var path = require('path');
 var exec = require('child_process').exec;
 var browserify = require('browserify');
 var watchify = require('watchify');
 var Promise = require('when');
-var async = require('async');
 var glob = require('glob')
 var chalk = require('chalk');
 chalk.enabled = true;
@@ -224,22 +222,25 @@ Mundler.prototype.buildBundle = function(bundleKey, props, externalModules, name
       return false;
     }
 
-    async.each(filesArr, function(file, next) {
-      var filepath;
+    Promise.all(filesArr
+      .map(function(file) {
+        var filepath;
 
-      if (cwd === processCwd) {
-        filePath = cwd + '/' + file;
-      }
-      else {
-        filePath = processCwd + '/' + cwd + '/' + file;
-      }
+        if (cwd === processCwd) {
+          filePath = cwd + '/' + file;
+        }
+        else {
+          filePath = processCwd + '/' + cwd + '/' + file;
+        }
 
-      b.add(filePath, { expose: file });
+        b.add(filePath, { expose: file });
 
-      next();
+        return file;
+      })
+    ).then(function() {
+      self.bundle(b, bundleKey, dest, props);
     });
 
-    self.bundle(b, bundleKey, dest, props);
   });
 }
 
