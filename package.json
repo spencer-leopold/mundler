@@ -12,7 +12,10 @@
   },
   "keywords": [
     "browserify",
-    "watchify"
+    "watchify",
+    "multiple",
+    "bundles",
+    "common"
   ],
   "author": {
     "name": "Spencer Leopold",
