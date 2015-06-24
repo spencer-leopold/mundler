@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-var Mundler = require('./lib/mundler');
+var Mundler = require('./');
 var argv = require('yargs')
-    .usage('Usage: mundler --app [app] --cwd [cwd] -n [name] --vendor [vendor] -n [name] -o [dest] -c [bool] -w [bool]')
+    .usage('Usage: mundler --app [app] --cwd [cwd] -n [name] --vendor [vendor] -n [name] -o [dest] -c [bool] -w [watch]')
     .describe('app', 'The directory containing application builds')
     .describe('vendor', 'The direcotry containing vendor scripts')
     .describe('cwd', 'Current Working Directory, [required]')
@@ -16,4 +16,5 @@ var argv = require('yargs')
     .describe('w', 'Whether to watch source directory')
     .argv;
 
-new Mundler(null, argv);
+var mundler = Mundler(null, argv);
+mundler.run();

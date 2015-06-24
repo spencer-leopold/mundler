@@ -28,6 +28,7 @@
     "browserify": "^9.0.7",
     "chalk": "^0.5.1",
     "glob": "^4.3.5",
+    "mothership": "^0.3.0",
     "watchify": "^3.1.0",
     "when": "^3.7.3",
     "yargs": "^2.1.1"
