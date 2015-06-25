@@ -1,3 +1,4 @@
+var path = require('path');
 var chai = require('chai');
 var chaiAsPromised = require("chai-as-promised");
 var sinon = require('sinon');
@@ -67,12 +68,23 @@ describe('lib/mundler', function() {
 
     describe('#processMatch()', function() {
       it('should return match if it\'s an external module', function() {
+        var match = m.processMatch(['fixtures/sample.js'], 'chai', testConfig.test);
+        match.should.equal('chai');
       });
 
       it('should return false if already collected', function() {
+        var match = m.processMatch(['fixtures/sample.js'], 'chai', testConfig.test, ['chai']);
+        match.should.equal(false);
       });
 
       it('should recurse if match is internal', function() {
+        var expectedmodules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
+        var spy = sinon.spy(m, 'processMatch');
+        
+        return m.processMatch([path.resolve('test/fixtures/sample.js')], '../../lib/mundler', testConfig.test).then(function(modules) {
+          spy.should.have.been.callCount(7); // once for initial call and once for each module found (modules in array above)
+          modules.should.deep.equal(expectedmodules);
+        });
       });
     });
 
