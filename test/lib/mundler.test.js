@@ -18,6 +18,13 @@ describe('lib/mundler', function() {
     }
   };
 
+  var testConfigNoCwd = {
+    test: {
+      src: 'test/fixtures/**/*.js',
+      dest: '../test_output/testOutput.js'
+    }
+  };
+
   describe('Mundler', function() {
     var m;
 
@@ -48,18 +55,13 @@ describe('lib/mundler', function() {
       });
 
       it('should work if no CWD is set', function() {
-        var testConfigNoCwd = {
-          src: testConfig.test.src,
-          dest: testConfig.test.dest
-        };
-
         var expectedValues = {
           bundle: 'test',
-          props: testConfigNoCwd,
+          props: testConfigNoCwd.test,
           modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
         };
 
-        return m.buildDependencyList('test', testConfigNoCwd).should.eventually.deep.equal(expectedValues);
+        return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedValues);
       });
     });
 
