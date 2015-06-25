@@ -1,56 +1,65 @@
 var chai = require('chai');
+var chaiAsPromised = require("chai-as-promised");
 var sinon = require('sinon');
 var sinonChai = require('sinon-chai');
-var Events = require('../../shared/events');
 var should = chai.should();
+var Mundler = require('../../index');
 
+chai.use(chaiAsPromised);
 chai.use(sinonChai);
 
 describe('lib/mundler', function() {
 
+  var testConfig = {
+    test: {
+      cwd: 'test/',
+      src: 'fixtures/**/*.js',
+      dest: '../test_output/testOutput.js'
+    }
+  };
+
   describe('Mundler', function() {
+    var m;
 
-    describe('#initOptions()', function() {
-      it('should return an object of configuration options', function() {
+    beforeEach(function() {
+      m = Mundler(testConfig);
+    });
+
+    describe('#getPackageProperty()', function() {
+      it('should return a property if it exists in package.json', function() {
+        return m.getPackageProperty('version').should.eventually.equal('1.0.0');
       });
 
-      it('should look for in package.json if no custom path is passed in', function() {
-      });
-
-      it('should look for a mundler.config file if not set in package.json', function() {
+      it('should return empty object if not found', function() {
+        return m.getPackageProperty('nonExistentProperty').should.eventually.deep.equal({});
       });
     });
 
-    describe('#browserAliasCheck()', function() {
-      it('should look for a browser json object in package.json', function() {
+    describe('#buildDependencyList()', function() {
+
+      it('should return object containing array of external module dependencies', function() {
+        var expectedValues = {
+          bundle: 'test',
+          props: testConfig.test,
+          modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
+        };
+
+        return m.buildDependencyList('test', testConfig.test).should.eventually.deep.equal(expectedValues);
       });
 
-      it('should return false if not found', function() {
-      });
-    });
+      it('should work if no CWD is set', function() {
+        var testConfigNoCwd = {
+          src: testConfig.test.src,
+          dest: testConfig.test.dest
+        };
 
-    describe('#loadBrowserConfig()', function() {
-      it('should look for browser object if TRUE is not first argument', function() {
-      });
+        var expectedValues = {
+          bundle: 'test',
+          props: testConfigNoCwd,
+          modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
+        };
 
-      it('should look for browserify-shims object if TRUE is first argument', function() {
-      });
-
-      it('should return a promise', function() {
-      });
-
-      it('should return a promise that resolves to an empty object if nothing found', function() {
-      });
-    });
-
-    describe('#searchForDependencies()', function() {
-      it('should search file for any external imports', function() {
-      });
-
-      it('should search file for any external requires', function() {
-      });
-
-      it('should recurse through internal dependencies, looking for other external dependencies', function() {
+        return m.buildDependencyList('test', testConfigNoCwd).should.eventually.deep.equal(expectedValues);
       });
     });
 
