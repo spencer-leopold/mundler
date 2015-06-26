@@ -88,21 +88,20 @@ describe('lib/mundler', function() {
       });
     });
 
-    describe('#checkFilesForDependencies()', function() {
-      it('should call searchForDependencies once for each file if src is a glob', function() {
-      });
-
-      it('should return a promise', function() {
-      });
-
-      it('should resolve to an object that contains all external dependencies found', function() {
-      });
-    });
-
     describe('#buildBundle()', function() {
+      it('should add all internal dependencies to browserify', function() {
+      });
+
+      it('should call buildVendorBundle if any file contains external modules', function() {
+      });
+
+      it('should require all external modules to browserify', function() {
+      });
     });
 
     describe('#buildVendorBundle()', function() {
+      it('should add all external dependencies to browserify', function() {
+      });
     });
 
     describe('#bundle()', function() {
