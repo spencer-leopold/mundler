@@ -4,7 +4,6 @@
   "description": "Utility to build multiple browserify bundles",
   "main": "index.js",
   "scripts": {
-    "postinstall": "find node_modules/ -name '*.info' -type f -delete",
     "test": "mocha -R spec ./test --recursive",
     "coverage": "istanbul cover _mocha -- -R spec ./test --recursive",
     "coveralls": "npm run coverage && cat ./coverage/lcov.info | coveralls"
