@@ -109,12 +109,6 @@ describe('lib/mundler', function() {
         spy.should.have.been.calledOnce;
       });
 
-      it('should not call Mundler.buildVendorBundle() if no external modules are used', function() {
-        var spy = sinon.spy(m, 'buildVendorBundle');
-        m.buildBundle('test', testConfig.test);
-        spy.should.not.have.been.called;
-      });
-
       it('should configure main bundle and call Mundler.bundle()', function(done) {
         var spy = sinon.spy(m, 'bundle');
         m.buildBundle('test', testConfig.test);
@@ -132,8 +126,12 @@ describe('lib/mundler', function() {
       it('should configure vendor bundle and call Mundler.bundle()', function() {
         var spy = sinon.spy(m, 'bundle');
         var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
-        m.buildVendorBundle('vendor-test', path.resolve('test/output/test.js'), modules);
+
+        m.buildVendorBundle('vendor-test', path.resolve('test/output/test.js'), false, modules);
         spy.should.have.been.calledOnce;
+      });
+
+      it('should not call Mundler.bundle() if not modules or aliases are passed', function() {
       });
     });
 
