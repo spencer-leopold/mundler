@@ -3,6 +3,7 @@ var chai = require('chai');
 var chaiAsPromised = require("chai-as-promised");
 var sinon = require('sinon');
 var sinonChai = require('sinon-chai');
+var expect = chai.expect;
 var should = chai.should();
 var Mundler = require('../../index');
 
@@ -15,14 +16,26 @@ describe('lib/mundler', function() {
     test: {
       cwd: 'test/',
       src: 'fixtures/**/*.js',
-      dest: '../test_output/testOutput.js'
+      dest: 'output/test.js'
     }
   };
 
   var testConfigNoCwd = {
     test: {
       src: 'test/fixtures/**/*.js',
-      dest: '../test_output/testOutput.js'
+      dest: 'output/test.js'
+    }
+  };
+
+  var testConfigMissingSrc = {
+    test: {
+      dest: 'output/test.js'
+    }
+  };
+
+  var testConfigMissingDest = {
+    test: {
+      src: 'test/fixtures/**/*.js',
     }
   };
 
@@ -47,7 +60,7 @@ describe('lib/mundler', function() {
 
       it('should return object containing array of external module dependencies', function() {
         var expectedValues = {
-          bundle: 'test',
+          name: 'test',
           props: testConfig.test,
           modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
         };
@@ -57,7 +70,7 @@ describe('lib/mundler', function() {
 
       it('should work if no CWD is set', function() {
         var expectedValues = {
-          bundle: 'test',
+          name: 'test',
           props: testConfigNoCwd.test,
           modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
         };
@@ -89,22 +102,76 @@ describe('lib/mundler', function() {
     });
 
     describe('#buildBundle()', function() {
-      it('should add all internal dependencies to browserify', function() {
+      it('should add external files and call Mundler.buildVendorBundle()', function() {
+        var spy = sinon.spy(m, 'buildVendorBundle');
+        var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
+        m.buildBundle('test', testConfig.test, modules);
+        spy.should.have.been.calledOnce;
       });
 
-      it('should call buildVendorBundle if any file contains external modules', function() {
+      it('should not call Mundler.buildVendorBundle() if no external modules are used', function() {
+        var spy = sinon.spy(m, 'buildVendorBundle');
+        m.buildBundle('test', testConfig.test);
+        spy.should.not.have.been.called;
       });
 
-      it('should require all external modules to browserify', function() {
+      it('should configure main bundle and call Mundler.bundle()', function(done) {
+        var spy = sinon.spy(m, 'bundle');
+        m.buildBundle('test', testConfig.test);
+
+        // give it enough time to call bundle
+        // before checking if it was called or not
+        setTimeout(function() {
+          spy.should.have.been.calledOnce;
+          done();
+        }, 1000);
       });
     });
 
     describe('#buildVendorBundle()', function() {
-      it('should add all external dependencies to browserify', function() {
+      it('should configure vendor bundle and call Mundler.bundle()', function() {
+        var spy = sinon.spy(m, 'bundle');
+        var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
+        m.buildVendorBundle('vendor-test', path.resolve('test/output/test.js'), modules);
+        spy.should.have.been.calledOnce;
       });
     });
 
     describe('#bundle()', function() {
+    });
+
+    describe('#run()', function() {
+      it('should throw error if missing "src" property', function(done) {
+        var m = Mundler(testConfigMissingSrc);
+        var spy = sinon.spy(m, 'verifyRequiredProps');
+
+        m.run();
+
+        // give it enough time to call verifyProps
+        // before checking if it was called or not
+        setTimeout(function() {
+          var spyCall = spy.getCall(0);
+          spy.should.have.been.calledOnce;
+          spyCall.exception.should.deep.equal(new Error('Missing property "src" in Mundler config for bundle: test'));
+          done();
+        }, 500);
+      });
+
+      it('should throw error if missing "dest" property', function(done) {
+        var m = Mundler(testConfigMissingSrc);
+        var spy = sinon.spy(m, 'verifyRequiredProps');
+
+        m.run();
+
+        // give it enough time to call verifyProps
+        // before checking if it was called or not
+        setTimeout(function() {
+          var spyCall = spy.getCall(0);
+          spy.should.have.been.calledOnce;
+          spyCall.exception.should.deep.equal(new Error('Missing property "dest" in Mundler config for bundle: test'));
+          done();
+        }, 500);
+      });
     });
   });
 
