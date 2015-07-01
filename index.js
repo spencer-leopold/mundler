@@ -39,7 +39,7 @@ module.exports = function mundlerInit(o, args) {
       }
     }
     catch (e) {
-      throw new Error('Cannot find Mundler configuration');
+      throw e;
     }
   }
 
