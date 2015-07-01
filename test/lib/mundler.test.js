@@ -48,7 +48,7 @@ describe('lib/mundler', function() {
 
     describe('#getPackageProperty()', function() {
       it('should return a property if it exists in package.json', function() {
-        return m.getPackageProperty('version').should.eventually.equal('1.0.0');
+        return m.getPackageProperty('version').should.eventually.equal('1.1.0');
       });
 
       it('should return empty object if not found', function() {
