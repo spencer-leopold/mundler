@@ -1,7 +1,7 @@
 {
   "name": "mundler",
   "version": "1.0.0",
-  "description": "Utility to build multiple browserify bundles",
+  "description": "Module to easily build multiple browserify bundles. Automatically bundles external dependencies separately.",
   "main": "index.js",
   "scripts": {
     "postinstall": "find node_modules/ -name '*.info' -type f -delete",
@@ -17,8 +17,7 @@
     "browserify",
     "watchify",
     "multiple",
-    "bundles",
-    "common"
+    "bundles"
   ],
   "author": {
     "name": "Spencer Leopold",
