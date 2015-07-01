@@ -2,18 +2,13 @@
 
 var Mundler = require('./');
 var argv = require('yargs')
-    .usage('Usage: mundler --app [app] --cwd [cwd] -n [name] --vendor [vendor] -n [name] -o [dest] -c [bool] -w [watch]')
-    .describe('app', 'The directory containing application builds')
-    .describe('vendor', 'The direcotry containing vendor scripts')
-    .describe('cwd', 'Current Working Directory, [required]')
-    .alias('n', 'name')
-    .describe('n', 'Name of bundle')
-    .alias('o', 'output')
-    .describe('o', 'Directory to output bundles')
+    .usage('Usage: mundler -c [config] -w [watch]')
     .alias('c', 'config')
-    .describe('c', 'Custom location of config file')
+    .describe('c', 'Path to custom config file')
     .alias('w', 'watch')
-    .describe('w', 'Whether to watch source directory')
+    .describe('w', 'Name of bundle to watch; can use multiple times')
+    .help('h')
+    .alias('h', 'help')
     .argv;
 
 var mundler = Mundler(null, argv);

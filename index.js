@@ -5,16 +5,14 @@ var Mundler = require('./lib/mundler');
 module.exports = function mundlerInit(o, args) {
   var options;
 
-  if (o) {
-    if (typeof o !== 'object' || !!o._) {
+  if (!!o) {
+    if (typeof o !== 'object' || Array.isArray(o)) {
       throw new Error('Mundler options must be an object');
     }
 
     options = o;
-    return new Mundler(options, args);
   }
-
-  if (args && args.config) {
+  else if (args && !!args.config) {
     try {
       options = require(args.config);
     }
