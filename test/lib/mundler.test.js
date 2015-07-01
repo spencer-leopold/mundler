@@ -47,6 +47,7 @@ describe('lib/mundler', function() {
     });
 
     describe('#getPackageProperty()', function() {
+
       it('should return a property if it exists in package.json', function() {
         return m.getPackageProperty('version').should.eventually.equal('1.1.0');
       });
@@ -54,6 +55,7 @@ describe('lib/mundler', function() {
       it('should return empty object if not found', function() {
         return m.getPackageProperty('nonExistentProperty').should.eventually.deep.equal({});
       });
+
     });
 
     describe('#buildDependencyList()', function() {
@@ -77,9 +79,11 @@ describe('lib/mundler', function() {
 
         return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedValues);
       });
+
     });
 
     describe('#processMatch()', function() {
+
       it('should return match if it\'s an external module', function() {
         var match = m.processMatch(['fixtures/sample.js'], 'chai', testConfig.test);
         match.should.equal('chai');
@@ -99,9 +103,37 @@ describe('lib/mundler', function() {
           modules.should.deep.equal(expectedmodules);
         });
       });
+
+    });
+
+    describe('#readFile()', function() {
+
+      it('should return a promise with the value of the contents of a file if found', function() {
+        return m.readFile(path.resolve('test/helpers/testConfig.js')).should.eventually.deep.equal("module.exports = {\n  test: {\n    cwd: \'test/\',\n    src: \'fixtures/**/*.js\',\n    dest: \'output/test.js\'\n  }\n};\n");
+      });
+
+      it('should reject with an error if not found', function() {
+        return m.readFile(path.resolve('test/helpers/nonExistent.js')).should.be.rejectedWith("ENOENT: no such file or directory, open '"+path.resolve('test/helpers/nonExistent.js')+"'");
+      });
+
+    });
+
+    describe('#runTasks()', function() {
+
+      it('should accept an array or a string', function() {
+        var spy = sinon.spy(m, 'runTasks');
+        return m.runTasks('ls -l').should.eventually.equal(0);
+      });
+
+      it('should kill bundle process with promise rejection if task fails', function() {
+        var spy = sinon.spy(m, 'runTasks');
+        return m.runTasks('nonexistentcommandtorun').should.be.rejectedWith('Task "nonexistentcommandtorun" failed');
+      });
+
     });
 
     describe('#configureBundle()', function() {
+
       it('should add external files and call Mundler.configureVendorBundle()', function() {
         var spy = sinon.spy(m, 'configureVendorBundle');
         var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
@@ -120,9 +152,11 @@ describe('lib/mundler', function() {
           done();
         }, 1000);
       });
+
     });
 
     describe('#configureVendorBundle()', function() {
+
       it('should configure vendor bundle and call Mundler.bundle()', function() {
         var spy = sinon.spy(m, 'bundle');
         var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
@@ -131,14 +165,19 @@ describe('lib/mundler', function() {
         spy.should.have.been.calledOnce;
       });
 
-      it('should not call Mundler.bundle() if not modules or aliases are passed', function() {
+      it('should not call Mundler.bundle() if no modules or aliases are passed', function() {
+        var spy = sinon.spy(m, 'bundle');
+        m.configureVendorBundle('vendor-test', { vendorDest: path.resolve('test/output/test.js') });
+        spy.should.not.have.been.called;
       });
+
     });
 
     describe('#bundle()', function() {
     });
 
     describe('#start()', function() {
+
       it('should throw error if missing "src" property', function(done) {
         var m = Mundler(testConfigMissingSrc);
         var spy = sinon.spy(m, 'verifyRequiredProps');
@@ -170,7 +209,9 @@ describe('lib/mundler', function() {
           done();
         }, 500);
       });
+
     });
+
   });
 
 });

@@ -55,7 +55,6 @@ describe('mundlerInit', function() {
 
     expect(function() {
       var m = Mundler(['test']);
-      console.log(m);
     }).to.throw('Mundler options must be an object');
   });
 
