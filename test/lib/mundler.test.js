@@ -113,7 +113,7 @@ describe('lib/mundler', function() {
       });
 
       it('should reject with an error if not found', function() {
-        return m.readFile(path.resolve('test/helpers/nonExistent.js')).should.be.rejectedWith("ENOENT: no such file or directory, open '"+path.resolve('test/helpers/nonExistent.js')+"'");
+        return m.readFile(path.resolve('test/helpers/nonExistent.js')).should.be.rejectedWith("ENOENT");
       });
 
     });
