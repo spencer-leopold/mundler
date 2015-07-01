@@ -17,4 +17,4 @@ var argv = require('yargs')
     .argv;
 
 var mundler = Mundler(null, argv);
-mundler.run();
+mundler.start();
