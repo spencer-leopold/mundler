@@ -29,12 +29,12 @@
   },
   "homepage": "https://github.com/spencer-leopold/mundler",
   "dependencies": {
-    "browserify": "^9.0.8",
-    "chalk": "^0.5.1",
-    "glob": "^4.5.3",
+    "browserify": "^10.2.4",
+    "chalk": "^1.0.0",
+    "glob": "^5.0.12",
     "watchify": "^3.1.0",
     "when": "^3.7.3",
-    "yargs": "^2.3.0"
+    "yargs": "^3.14.0"
   },
   "bin": {
     "mundler": "./bin.js"
