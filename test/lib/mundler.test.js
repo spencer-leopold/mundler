@@ -101,17 +101,17 @@ describe('lib/mundler', function() {
       });
     });
 
-    describe('#buildBundle()', function() {
-      it('should add external files and call Mundler.buildVendorBundle()', function() {
-        var spy = sinon.spy(m, 'buildVendorBundle');
+    describe('#configureBundle()', function() {
+      it('should add external files and call Mundler.configureVendorBundle()', function() {
+        var spy = sinon.spy(m, 'configureVendorBundle');
         var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
-        m.buildBundle('test', testConfig.test, modules);
+        m.configureBundle('test', testConfig.test, modules);
         spy.should.have.been.calledOnce;
       });
 
       it('should configure main bundle and call Mundler.bundle()', function(done) {
         var spy = sinon.spy(m, 'bundle');
-        m.buildBundle('test', testConfig.test);
+        m.configureBundle('test', testConfig.test);
 
         // give it enough time to call bundle
         // before checking if it was called or not
@@ -122,12 +122,12 @@ describe('lib/mundler', function() {
       });
     });
 
-    describe('#buildVendorBundle()', function() {
+    describe('#configureVendorBundle()', function() {
       it('should configure vendor bundle and call Mundler.bundle()', function() {
         var spy = sinon.spy(m, 'bundle');
         var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
 
-        m.buildVendorBundle('vendor-test', path.resolve('test/output/test.js'), false, modules);
+        m.configureVendorBundle('vendor-test', path.resolve('test/output/test.js'), false, modules);
         spy.should.have.been.calledOnce;
       });
 
@@ -138,12 +138,12 @@ describe('lib/mundler', function() {
     describe('#bundle()', function() {
     });
 
-    describe('#run()', function() {
+    describe('#start()', function() {
       it('should throw error if missing "src" property', function(done) {
         var m = Mundler(testConfigMissingSrc);
         var spy = sinon.spy(m, 'verifyRequiredProps');
 
-        m.run();
+        m.start();
 
         // give it enough time to call verifyProps
         // before checking if it was called or not
@@ -159,7 +159,7 @@ describe('lib/mundler', function() {
         var m = Mundler(testConfigMissingSrc);
         var spy = sinon.spy(m, 'verifyRequiredProps');
 
-        m.run();
+        m.start();
 
         // give it enough time to call verifyProps
         // before checking if it was called or not
