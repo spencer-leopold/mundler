@@ -127,7 +127,7 @@ describe('lib/mundler', function() {
         var spy = sinon.spy(m, 'bundle');
         var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
 
-        m.configureVendorBundle('vendor-test', path.resolve('test/output/test.js'), false, modules);
+        m.configureVendorBundle('vendor-test', { vendorDest: path.resolve('test/output/test.js') }, modules);
         spy.should.have.been.calledOnce;
       });
 

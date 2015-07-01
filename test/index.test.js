@@ -72,6 +72,6 @@ describe('mundlerInit', function() {
 
     expect(function() {
       Mundler(null);
-    }).to.throw("Cannot find Mundler configuration");
+    }).to.throw("Cannot find mundler.config.js configuration");
   });
 });
