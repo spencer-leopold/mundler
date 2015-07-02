@@ -121,10 +121,21 @@ concat: Boolean                     optional, defaults to false
 
 watch: Boolean                      optional, defaults to false
 
+ignoreFiles: Array                  
+  
+  Optional, array of files to ignore - relative to either the
+  CWD (if used) or project root
+
 preBundle: function(b)
 
-  optional, configure the browserify object before bundling.
+  Optional, configure the browserify object before bundling.
   Apply transforms, add/require additonal files, etc.
+
+useRequire: Boolean
+
+  Optional, defaults to false. This changes b.add to b.require
+  for internal files.  Setting it to TRUE makes your file 
+  available to require() in external modules.
 
 browserifyOpts: Object              optional, configures browserify
 
