@@ -8,9 +8,9 @@ The main purpose of this module is for quicker browserify builds during developm
 
 ## Setup
 
-Configuration can either be added directly into your package.json, or you can create a mundler.config.js file in order to use some of the features that require functions.
+Configuration can either be added directly into your package.json, or you can create a mundler.config.js file in order to use some of the additional features.
 
-# install
+# Install
 
 With [npm](http://npmjs.org) do:
 
