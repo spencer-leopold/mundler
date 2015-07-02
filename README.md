@@ -35,11 +35,11 @@ Options:
 # Configuration using package.json
 
 ```
-{
+...
   "mundler": {
     "my-bundle": {
       "src": "src/js/app/main.js",
-      "dest": "dist/js/my-bundle.js"
+      "dest": "dist/js/my-bundle.js",
       "concat": true
     },
     "my-other-bundle": {
@@ -53,17 +53,19 @@ Options:
       "postTasks": "npm run uglify"
     }
   }
-}
+...
 ```
 
-# Configuration using mundler.config.js (in your project's root)
+# Configuration using mundler.config.js
+
+_(in your project's root)_
 
 ```
 module.exports = {
   "my-bundle": {
     src: 'src/js/app/main.js',
     dest: 'dist/js/my-bundle.js',
-    vendorDest: 'dist/js/my-vendor-bundle.js'
+    vendorDest: 'dist/js/my-vendor-bundle.js',
     preBundle: function(b) {
       b.transform('babelify');
     }
@@ -84,22 +86,28 @@ module.exports = {
 # All Config Options
 
 ```
-cwd: 'path/to/cwd'            optional
+cwd: 'path/to/cwd'                  optional
 
-src: 'path/to/entry-file'     required, accepts a glob
+src: 'path/to/entry-file'           required, accepts a glob
 
 dest: 'path/to/destination-file'    required
 
-vendorDest: 'path/to/vendor/destination-file'      optional, defaults to destination
-                                                    file prefixed with "vendor"
+vendorDest: 'path/to/vendor/destination-file'
 
-concat: Boolean            optional, defaults to false
+  optional, defaults to destination file prefixed with "vendor"
 
-browserifyOpts: Object     optional, configures browserify
+concat: Boolean                     optional, defaults to false
 
-watchifyOpts: Object       optional, configures watchify options
+preBundle: function(b)
 
-preTasks: Array/String     optional, commands to run before bundle is created
+  optional, configure the browserify object before bundling.
+  Apply transforms, add/require additonal files, etc.
 
-postTasks: Array/String    optional, commands to run after bundle is created
+browserifyOpts: Object              optional, configures browserify
+
+watchifyOpts: Object                optional, configures watchify options
+
+preTasks: Array/String              optional, commands to run before bundle is created
+
+postTasks: Array/String             optional, commands to run after bundle is created
 ```
