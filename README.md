@@ -98,6 +98,8 @@ vendorDest: 'path/to/vendor/destination-file'
 
 concat: Boolean                     optional, defaults to false
 
+watch: Boolean                      optional, defaults to false
+
 preBundle: function(b)
 
   optional, configure the browserify object before bundling.
