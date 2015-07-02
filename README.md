@@ -32,6 +32,10 @@ Options:
                   watch.
 ```
 
+# Example - using alone
+
+  $ mundler -w my-bundle -w my-other-bundle
+
 # Configuration using package.json
 
 ```
@@ -49,12 +53,23 @@ Options:
       "preTasks": [
         "npm run jshint -s",
         "other task here"
-      ],
-      "postTasks": "npm run uglify"
+      ]
     }
   }
 ...
+  "scripts": {
+    "uglify": "uglifyjs dist/js/my-other-bundle.js -o dist/js/my-other-bundle.min.js -c warnings=false -m --stats",
+    "jshint": "jshint src/js/app/modules/**/*.js --verbose",
+    "watch:scripts": "mundler -w my-bundle -w my-other-bundle",
+    "build:scripts": "mundler && npm run uglify",
+    "dev": "npm run watch:scripts",
+    "prod": "npm run build:scripts"
+  }
 ```
+
+# Example - using the above package.json
+
+  $ npm run dev
 
 # Configuration using mundler.config.js
 
