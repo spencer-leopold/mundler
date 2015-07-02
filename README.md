@@ -32,9 +32,12 @@ Options:
                   watch.
 ```
 
-# Example - using alone
+# Example
+_using standalone_ 
 
+```
   $ mundler -w my-bundle -w my-other-bundle
+```
 
 # Configuration using package.json
 
@@ -67,9 +70,12 @@ Options:
   }
 ```
 
-# Example - using the above package.json
+# Example
+_using the above package.json_
 
+```
   $ npm run dev
+```
 
 # Configuration using mundler.config.js
 
