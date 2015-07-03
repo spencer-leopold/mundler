@@ -58,25 +58,28 @@ describe('lib/mundler', function() {
 
     });
 
+    describe('#searchForDependencies()', function() {
+
+      it('should remove comments before searching file for requires/imports', function() {
+        return m.searchForDependencies('test', [path.resolve('test/fixtures/sample.js')], testConfig.test).should.eventually.not.contain('fakeLatte');
+      });
+
+      it('should find all requires/imports', function() {
+        var expectedValues = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk', 'chai'];
+        return m.searchForDependencies('test', [path.resolve('test/fixtures/sample.js')], testConfig.test).should.eventually.deep.equal(expectedValues);
+      });
+
+    });
+
     describe('#buildDependencyList()', function() {
 
       it('should return object containing array of external module dependencies', function() {
-        var expectedValues = {
-          name: 'test',
-          props: testConfig.test,
-          modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
-        };
-
+        var expectedValues = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk', 'chai'];
         return m.buildDependencyList('test', testConfig.test).should.eventually.deep.equal(expectedValues);
       });
 
       it('should work if no CWD is set', function() {
-        var expectedValues = {
-          name: 'test',
-          props: testConfigNoCwd.test,
-          modules: ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk', 'chai']
-        };
-
+        var expectedValues = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk', 'chai'];
         return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedValues);
       });
 
@@ -85,20 +88,20 @@ describe('lib/mundler', function() {
     describe('#processMatch()', function() {
 
       it('should return match if it\'s an external module', function() {
-        var match = m.processMatch(['fixtures/sample.js'], 'chai', testConfig.test);
+        var match = m.processMatch('test', ['fixtures/sample.js'], 'chai', testConfig.test);
         match.should.equal('chai');
       });
 
       it('should return false if already collected', function() {
-        var match = m.processMatch(['fixtures/sample.js'], 'chai', testConfig.test, ['chai']);
+        var match = m.processMatch('test', ['fixtures/sample.js'], 'chai', testConfig.test, ['chai']);
         match.should.equal(false);
       });
 
       it('should recurse if match is internal', function() {
-        var expectedmodules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
+        var expectedmodules = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk'];
         var spy = sinon.spy(m, 'processMatch');
         
-        return m.processMatch([path.resolve('test/fixtures/sample.js')], '../../lib/mundler', testConfig.test).then(function(modules) {
+        return m.processMatch('test', [path.resolve('test/fixtures/sample.js')], '../../lib/mundler', testConfig.test).then(function(modules) {
           spy.should.have.been.callCount(7); // once for initial call and once for each module found (modules in array above)
           modules.should.deep.equal(expectedmodules);
         });
@@ -118,11 +121,23 @@ describe('lib/mundler', function() {
 
     });
 
+    describe('#glob()', function() {
+
+      it('should return a promise with an array of files', function() {
+        return m.glob(path.resolve('test') + '/**/*.js').should.eventually.have.length(5);
+      });
+
+      it('should reject with an error if not found', function() {
+        return m.glob(path.resolve('nonExistentTest') + '/**/*.js').should.reject;
+      });
+
+    });
+
     describe('#runTasks()', function() {
 
       it('should accept an array or a string', function() {
         var spy = sinon.spy(m, 'runTasks');
-        return m.runTasks('ls -l').should.eventually.equal(0);
+        return m.runTasks('echo "testing runTasks"').should.eventually.equal(0);
       });
 
       it('should kill bundle process with promise rejection if task fails', function() {
@@ -136,13 +151,13 @@ describe('lib/mundler', function() {
 
       it('should add external files and call Mundler.configureVendorBundle()', function() {
         var spy = sinon.spy(m, 'configureVendorBundle');
-        var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
+        var modules = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk'];
         m.configureBundle('test', testConfig.test, modules);
         spy.should.have.been.calledOnce;
       });
 
-      it('should configure main bundle and call Mundler.bundle()', function(done) {
-        var spy = sinon.spy(m, 'bundle');
+      it('should configure main bundle and call Mundler.createBundle()', function(done) {
+        var spy = sinon.spy(m, 'createBundle');
         m.configureBundle('test', testConfig.test);
 
         // give it enough time to call bundle
@@ -157,16 +172,16 @@ describe('lib/mundler', function() {
 
     describe('#configureVendorBundle()', function() {
 
-      it('should configure vendor bundle and call Mundler.bundle()', function() {
-        var spy = sinon.spy(m, 'bundle');
-        var modules = ['fs', 'path', 'browserify', 'watchify', 'when', 'chalk'];
+      it('should configure vendor bundle and call Mundler.createBundle()', function() {
+        var spy = sinon.spy(m, 'createBundle');
+        var modules = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk'];
 
         m.configureVendorBundle('vendor-test', { vendorDest: path.resolve('test/output/test.js') }, modules);
         spy.should.have.been.calledOnce;
       });
 
-      it('should not call Mundler.bundle() if no modules or aliases are passed', function() {
-        var spy = sinon.spy(m, 'bundle');
+      it('should not call Mundler.createBundle() if no modules or aliases are passed', function() {
+        var spy = sinon.spy(m, 'createBundle');
         m.configureVendorBundle('vendor-test', { vendorDest: path.resolve('test/output/test.js') });
         spy.should.not.have.been.called;
       });
@@ -174,40 +189,34 @@ describe('lib/mundler', function() {
     });
 
     describe('#bundle()', function() {
-    });
 
-    describe('#start()', function() {
-
-      it('should throw error if missing "src" property', function(done) {
+      it('should throw error if missing "src" property', function() {
         var m = Mundler(testConfigMissingSrc);
         var spy = sinon.spy(m, 'verifyRequiredProps');
 
-        m.start();
+        m.bundle()
 
-        // give it enough time to call verifyProps
-        // before checking if it was called or not
-        setTimeout(function() {
-          var spyCall = spy.getCall(0);
-          spy.should.have.been.calledOnce;
-          spyCall.exception.should.deep.equal(new Error('Missing property "src" in Mundler config for bundle: test'));
-          done();
-        }, 500);
+        spy.should.have.been.calledOnce;
+        return spy.returnValues[0].should.be.rejectedWith('Missing property "src" in Mundler config for bundle: test');
       });
 
-      it('should throw error if missing "dest" property', function(done) {
-        var m = Mundler(testConfigMissingSrc);
+      it('should throw error if missing "dest" property', function() {
+        var m = Mundler(testConfigMissingDest);
         var spy = sinon.spy(m, 'verifyRequiredProps');
 
-        m.start();
+        m.bundle()
 
-        // give it enough time to call verifyProps
-        // before checking if it was called or not
-        setTimeout(function() {
-          var spyCall = spy.getCall(0);
-          spy.should.have.been.calledOnce;
-          spyCall.exception.should.deep.equal(new Error('Missing property "dest" in Mundler config for bundle: test'));
-          done();
-        }, 500);
+        spy.should.have.been.calledOnce;
+        return spy.returnValues[0].should.be.rejectedWith('Missing property "dest" in Mundler config for bundle: test');
+      });
+
+      it('should halt execution if missing a require prop', function() {
+        var m = Mundler(testConfigMissingDest);
+        var bundleSpy = sinon.spy(m, 'createBundle');
+
+        m.bundle()
+
+        bundleSpy.should.not.have.been.called;
       });
 
     });

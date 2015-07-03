@@ -1,2 +1,8 @@
+/*
+ * require('fakeLatte');
+ */
+
+// require('fakeLatte');
+
 require('../../lib/mundler');
-require('chai');
+var chai = require('chai');
