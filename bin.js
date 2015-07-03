@@ -11,5 +11,5 @@ var argv = require('yargs')
     .alias('h', 'help')
     .argv;
 
-var mundler = Mundler(null, argv);
-mundler.start();
+var m = Mundler(null, argv);
+m.bundle();
