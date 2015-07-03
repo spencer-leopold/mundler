@@ -4,7 +4,6 @@
   "description": "Module to easily build multiple browserify bundles. Automatically bundles external dependencies separately.",
   "main": "index.js",
   "scripts": {
-    "postinstall": "find node_modules/mundler/ -name '*.info' -type f -delete",
     "test": "mocha -R spec ./test --recursive",
     "coverage": "istanbul cover _mocha -- -R spec ./test --recursive",
     "coveralls": "npm run coverage && cat ./coverage/lcov.info | coveralls"
