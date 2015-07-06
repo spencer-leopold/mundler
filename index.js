@@ -3,6 +3,8 @@ var fs = require('fs');
 var Mundler = require('./lib/mundler');
 
 module.exports = function mundlerInit(o, args) {
+  'use strict';
+
   var options;
 
   if (!!o) {
@@ -22,10 +24,10 @@ module.exports = function mundlerInit(o, args) {
   }
   else {
     try {
-      var package = require(path.resolve('package.json'));
+      var mainPackage = require(path.resolve('package.json'));
 
-      if (!!package.mundler) {
-        options = package.mundler;
+      if (!!mainPackage.mundler) {
+        options = mainPackage.mundler;
       }
       else {
         var config = path.resolve('mundler.config.js');
@@ -44,4 +46,4 @@ module.exports = function mundlerInit(o, args) {
   }
 
   return new Mundler(options, args);
-}
+};
