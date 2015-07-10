@@ -49,7 +49,7 @@ describe('lib/mundler', function() {
     describe('#getPackageProperty()', function() {
 
       it('should return a property if it exists in package.json', function() {
-        return m.getPackageProperty('version').should.eventually.equal('1.2.4');
+        return m.getPackageProperty('name').should.eventually.equal('mundler');
       });
 
       it('should return empty object if not found', function() {
@@ -65,7 +65,7 @@ describe('lib/mundler', function() {
       });
 
       it('should find all requires/imports', function() {
-        var expectedValues = ['fs', 'path', 'child_process', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        var expectedValues = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
         return m.searchForDependencies('test', [path.resolve('test/fixtures/sample.js')], testConfig.test).should.eventually.deep.equal(expectedValues);
       });
 
@@ -74,12 +74,12 @@ describe('lib/mundler', function() {
     describe('#buildDependencyList()', function() {
 
       it('should return object containing array of external module dependencies', function() {
-        var expectedValues = ['fs', 'path', 'child_process', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        var expectedValues = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
         return m.buildDependencyList('test', testConfig.test).should.eventually.deep.equal(expectedValues);
       });
 
       it('should work if no CWD is set', function() {
-        var expectedValues = ['fs', 'path', 'child_process', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        var expectedValues = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
         return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedValues);
       });
 
@@ -98,11 +98,11 @@ describe('lib/mundler', function() {
       });
 
       it('should recurse if match is internal', function() {
-        var expectedmodules = ['fs', 'path', 'child_process', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk'];
+        var expectedmodules = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk'];
         var spy = sinon.spy(m, 'processMatch');
         
         return m.processMatch('test', [path.resolve('test/fixtures/sample.js')], '../../lib/mundler', testConfig.test).then(function(modules) {
-          spy.should.have.been.callCount(9); // once for initial call and once for each module found (modules in array above)
+          spy.should.have.been.callCount(10); // once for initial call and once for each module found (modules in array above)
           modules.should.deep.equal(expectedmodules);
         });
       });
