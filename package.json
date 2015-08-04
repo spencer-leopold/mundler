@@ -38,7 +38,7 @@
     "yargs": "^3.14.0"
   },
   "bin": {
-    "mundler": "./bin.js"
+    "mundler": "bin.js"
   },
   "devDependencies": {
     "chai": "^3.0.0",
