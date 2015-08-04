@@ -81,7 +81,7 @@ _using the above package.json_
 
 _(in your project's root)_
 
-```
+```js
 module.exports = {
   "my-bundle": {
     src: 'src/js/app/main.js',
@@ -102,6 +102,51 @@ module.exports = {
     postTasks: 'npm run uglify -s'
   }
 }
+```
+
+# Example using nodemon with a postTask callback to restart it.
+
+```js
+var nodemon = require('nodemon');
+var nodemon_instance;
+
+nodemon_instance = nodemon({
+  script: './server.js',
+  verbose: true,
+  ext: 'js jsx',
+  ignore: [
+    '.git',
+    'app',
+    'dist',
+    'node_modules'
+  ],
+  execMap: {
+    js: 'iojs'
+  }
+}).on('restart', function() {
+  console.log('~~~ restart server ~~~');
+});
+
+module.exports = {
+  app: {
+    cwd: 'app/',
+    src: '**/*.j{s,sx}',
+    dest: 'dist/js/bundle-main.js',
+    concat: true,
+    prefix: 'app/',
+    preTasks: [
+      'npm run jshint -s'
+    ],
+    postTasks: function(cb) {
+      nodemon_instance.emit('restart');
+      cb();
+    },
+    useRequire: true,
+    browserifyOpts: {
+      ignoreMissing: true
+    }
+  }
+};
 ```
 
 # All Config Options
@@ -141,7 +186,7 @@ browserifyOpts: Object              optional, configures browserify
 
 watchifyOpts: Object                optional, configures watchify options
 
-preTasks: Array/String              optional, commands to run before bundle is created
+preTasks: Array/String/Function     optional, commands to run before bundle is created
 
-postTasks: Array/String             optional, commands to run after bundle is created
+postTasks: Array/String/Function    optional, commands to run after bundle is created
 ```
