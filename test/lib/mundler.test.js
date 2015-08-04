@@ -137,12 +137,12 @@ describe('lib/mundler', function() {
 
       it('should accept an array or a string', function() {
         var spy = sinon.spy(m, 'runTasks');
-        return m.runTasks('echo "testing runTasks"').should.eventually.equal(0);
+        return m.runTasks('echo "testing runTasks"').should.resolve;
       });
 
       it('should kill bundle process with promise rejection if task fails', function() {
         var spy = sinon.spy(m, 'runTasks');
-        return m.runTasks('nonexistentcommandtorun').should.be.rejectedWith('Task "nonexistentcommandtorun" failed');
+        return m.runTasks('nonexistentcommandtorun').should.reject;
       });
 
     });
