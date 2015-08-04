@@ -29,13 +29,13 @@
   },
   "homepage": "https://github.com/spencer-leopold/mundler",
   "dependencies": {
-    "bluebird": "^2.9.31",
-    "browserify": "^10.2.4",
-    "chalk": "^1.0.0",
-    "glob": "^5.0.12",
-    "object-assign": "^3.0.0",
-    "watchify": "^3.2.3",
-    "yargs": "^3.14.0"
+    "bluebird": "2.9.32",
+    "browserify": "10.2.4",
+    "chalk": "1.1.0",
+    "glob": "5.0.13",
+    "object-assign": "3.0.0",
+    "watchify": "3.2.3",
+    "yargs": "3.15.0"
   },
   "bin": "bin.js",
   "devDependencies": {
