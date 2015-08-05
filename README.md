@@ -137,9 +137,9 @@ module.exports = {
     preTasks: [
       'npm run jshint -s'
     ],
-    postTasks: function(cb) {
+    postTasks: function(done) {
       nodemon_instance.emit('restart');
-      cb();
+      done();
     },
     useRequire: true,
     browserifyOpts: {
