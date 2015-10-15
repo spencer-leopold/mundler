@@ -25,7 +25,6 @@ describe('mundlerInit', function() {
       options: testConfig,
       watchAll: false,
       watch: false,
-      browserAliasesAndShims: [],
       vendorBundleCache: {}
     };
 
@@ -41,7 +40,6 @@ describe('mundlerInit', function() {
       options: testConfig,
       watchAll: false,
       watch: false,
-      browserAliasesAndShims: [],
       vendorBundleCache: {}
     };
 
