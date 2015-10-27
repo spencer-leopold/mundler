@@ -65,8 +65,8 @@ describe('lib/mundler', function() {
       });
 
       it('should find all requires/imports', function() {
-        var expectedValues = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
-        return m.searchForDependencies('test', [path.resolve('test/fixtures/sample.js')], testConfig.test).should.eventually.deep.equal(expectedValues);
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        return m.searchForDependencies('test', [path.resolve('test/fixtures/sample.js')], testConfig.test).should.eventually.deep.equal(expectedModules);
       });
 
     });
@@ -74,13 +74,13 @@ describe('lib/mundler', function() {
     describe('#buildDependencyList()', function() {
 
       it('should return object containing array of external module dependencies', function() {
-        var expectedValues = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
-        return m.buildDependencyList('test', testConfig.test).should.eventually.deep.equal(expectedValues);
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        return m.buildDependencyList('test', testConfig.test).should.eventually.deep.equal(expectedModules);
       });
 
       it('should work if no CWD is set', function() {
-        var expectedValues = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
-        return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedValues);
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedModules);
       });
 
     });
@@ -98,12 +98,12 @@ describe('lib/mundler', function() {
       });
 
       it('should recurse if match is internal', function() {
-        var expectedmodules = ['fs', 'path', 'child_process', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk'];
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk'];
         var spy = sinon.spy(m, 'processMatch');
         
         return m.processMatch('test', [path.resolve('test/fixtures/sample.js')], '../../lib/mundler', testConfig.test).then(function(modules) {
-          spy.should.have.been.callCount(10); // once for initial call and once for each module found (modules in array above)
-          modules.should.deep.equal(expectedmodules);
+          spy.should.have.been.callCount(14); // once for initial call and once for each module found (modules in array above)
+          modules.should.deep.equal(expectedModules);
         });
       });
 
@@ -165,25 +165,7 @@ describe('lib/mundler', function() {
         setTimeout(function() {
           spy.should.have.been.calledOnce;
           done();
-        }, 1000);
-      });
-
-    });
-
-    describe('#configureVendorBundle()', function() {
-
-      it('should configure vendor bundle and call Mundler.createBundle()', function() {
-        var spy = sinon.spy(m, 'createBundle');
-        var modules = ['fs', 'path', 'browserify', 'watchify', 'bluebird', 'chalk'];
-
-        m.configureVendorBundle('vendor-test', { vendorDest: path.resolve('test/output/test.js') }, modules);
-        spy.should.have.been.calledOnce;
-      });
-
-      it('should not call Mundler.createBundle() if no modules or aliases are passed', function() {
-        var spy = sinon.spy(m, 'createBundle');
-        m.configureVendorBundle('vendor-test', { vendorDest: path.resolve('test/output/test.js') });
-        spy.should.not.have.been.called;
+        }, 1500);
       });
 
     });

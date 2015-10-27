@@ -22,7 +22,7 @@ describe('mundlerInit', function() {
   it('should accept an object being passed in', function() {
     var m = Mundler(testConfig);
     var defaults = {
-      options: testConfig,
+      bundles: testConfig,
       watchAll: false,
       watch: false,
       vendorBundleCache: {}
@@ -37,7 +37,7 @@ describe('mundlerInit', function() {
     var m = Mundler(null, { config: './test/helpers/testConfig.js' });
 
     var defaults = {
-      options: testConfig,
+      bundles: testConfig,
       watchAll: false,
       watch: false,
       vendorBundleCache: {}
