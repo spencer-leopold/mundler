@@ -33,9 +33,10 @@
     "browserify": "10.2.4",
     "chalk": "1.1.0",
     "glob": "5.0.13",
+    "minimatch": "3.0.0",
     "object-assign": "3.0.0",
-    "stream-buffers": "^2.2.0",
-    "vinyl": "^1.1.0",
+    "stream-buffers": "2.2.0",
+    "vinyl": "1.1.0",
     "watchify": "3.2.3",
     "yargs": "3.15.0"
   },

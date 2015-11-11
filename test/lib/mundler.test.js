@@ -65,7 +65,7 @@ describe('lib/mundler', function() {
       });
 
       it('should find all requires/imports', function() {
-        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'minimatch', 'chalk', 'chai'];
         return m.searchForDependencies('test', [path.resolve('test/fixtures/sample.js')], testConfig.test).should.eventually.deep.equal(expectedModules);
       });
 
@@ -74,12 +74,12 @@ describe('lib/mundler', function() {
     describe('#buildDependencyList()', function() {
 
       it('should return object containing array of external module dependencies', function() {
-        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'minimatch', 'chalk', 'chai'];
         return m.buildDependencyList('test', testConfig.test).should.eventually.deep.equal(expectedModules);
       });
 
       it('should work if no CWD is set', function() {
-        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk', 'chai'];
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'minimatch', 'chalk', 'chai'];
         return m.buildDependencyList('test', testConfigNoCwd.test).should.eventually.deep.equal(expectedModules);
       });
 
@@ -98,11 +98,11 @@ describe('lib/mundler', function() {
       });
 
       it('should recurse if match is internal', function() {
-        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'chalk'];
+        var expectedModules = ['fs', 'path', 'util', 'events', 'child_process', 'stream', 'vinyl', 'object-assign', 'browserify', 'watchify', 'bluebird', 'glob', 'minimatch', 'chalk'];
         var spy = sinon.spy(m, 'processMatch');
         
         return m.processMatch('test', [path.resolve('test/fixtures/sample.js')], '../../lib/mundler', testConfig.test).then(function(modules) {
-          spy.should.have.been.callCount(14); // once for initial call and once for each module found (modules in array above)
+          spy.should.have.been.callCount(15); // once for initial call and once for each module found (modules in array above)
           modules.should.deep.equal(expectedModules);
         });
       });
