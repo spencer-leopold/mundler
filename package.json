@@ -1,6 +1,6 @@
 {
   "name": "mundler",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Module to easily build multiple browserify bundles. Automatically bundles external dependencies separately.",
   "main": "index.js",
   "scripts": {
