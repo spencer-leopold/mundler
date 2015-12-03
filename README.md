@@ -142,6 +142,7 @@ module.exports = {
       done();
     },
     useRequire: true,
+    transformVendorFiles: true,
     browserifyOpts: {
       ignoreMissing: true
     }
